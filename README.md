@@ -9,17 +9,15 @@ API hien dang cau hinh trong `js/api.js`:
 ```js
 const API_BASE_URL = "https://69ead50515c7e2d5126a0f46.mockapi.io/v1";
 ```
+## K19-01 : Nhom 6 chu de 25
 
-## Chi can tao 2 resources
+-`DOAN THANh TUNG` - 1971040034
 
-Vi tai khoan cua ban chi tao duoc 2 resource, hay tao dung 2 resource sau:
+-`TRUONG HOANG PHONG` - 1971040022
 
-```text
-rooms
-students
-```
+-`TRAN HUU PHUOC` - 1971070006
 
-Khong tao `payments`. Tab thanh toan trong Admin se doc va cap nhat cac field thanh toan nam trong tung ban ghi `students`.
+Tab thanh toan trong Admin se doc va cap nhat cac field thanh toan nam trong tung ban ghi `students`.
 
 ## Resource: rooms
 
