@@ -4,6 +4,21 @@ const BANK_NAME = "Ngân hàng VCB ";
 const ACCOUNT_NUMBER = "035821634";
 const ACCOUNT_HOLDER = "DOAN THANH TUNG";
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"'`]/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;",
+    "`": "&#96;"
+  })[char]);
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value);
+}
+
 function getCurrentPaymentMonth() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -15,10 +30,10 @@ function buildPaymentNote(studentCode, roomNameOrId, paymentMonth) {
 
 function buildTransferInstruction(amount, note) {
   return `Số tiền chuyển khoản: <strong>${formatCurrency(amount)}</strong><br>` +
-    `Nội dung chuyển khoản: <strong>${note}</strong><br>` +
-    `Ngân hàng nhận: <strong>${BANK_NAME}</strong><br>` +
-    `Số tài khoản: <strong>${ACCOUNT_NUMBER}</strong><br>` +
-    `Chủ tài khoản: <strong>${ACCOUNT_HOLDER}</strong>`;
+    `Nội dung chuyển khoản: <strong>${escapeHtml(note)}</strong><br>` +
+    `Ngân hàng nhận: <strong>${escapeHtml(BANK_NAME)}</strong><br>` +
+    `Số tài khoản: <strong>${escapeHtml(ACCOUNT_NUMBER)}</strong><br>` +
+    `Chủ tài khoản: <strong>${escapeHtml(ACCOUNT_HOLDER)}</strong>`;
 }
 
 function buildTransferText(amount, note) {
@@ -68,7 +83,9 @@ function getAvailableBeds(room) {
 }
 
 function getRoomStatus(room) {
-  if (room.status) return room.status;
+  if (room.status === "maintenance") return "maintenance";
+  if (getAvailableBeds(room) <= 0) return "full";
+  if (room.status === "full") return "full";
   return getAvailableBeds(room) > 0 ? "available" : "full";
 }
 
@@ -118,7 +135,7 @@ function showToast(message, type = "success") {
     "beforeend",
     `<div id="${toastId}" class="toast align-items-center ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="d-flex">
-        <div class="toast-body">${message}</div>
+        <div class="toast-body">${escapeHtml(message)}</div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Đóng"></button>
       </div>
     </div>`
