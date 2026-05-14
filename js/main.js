@@ -1,6 +1,7 @@
 const publicState = {
   rooms: [],
   selectedRoomId: null,
+  //bộ lọc phân loại dữ liệu để tìm kiếm
   filters: {
     keyword: "",
     building: "",
@@ -16,12 +17,15 @@ document.addEventListener("DOMContentLoaded", () => {
   loadPublicRooms();
 });
 
+
+
 function bindPublicEvents() {
+  //xử lý bộ lọc, cập nhạt ngay khi nhập chữ
   document.getElementById("searchInput").addEventListener("input", (event) => {
     publicState.filters.keyword = event.target.value;
     renderPublicRooms();
   });
-
+// xử lý bộ lọc dạng chọn
   ["buildingFilter", "floorFilter", "typeFilter", "statusFilter", "amenityFilter"].forEach((id) => {
     document.getElementById(id).addEventListener("change", (event) => {
       const key = id.replace("Filter", "");
@@ -39,12 +43,13 @@ function bindPublicEvents() {
   document.getElementById("registerForm").addEventListener("submit", handleRegisterSubmit);
 }
 
+//Tải dữ liệu từ API và khởi tạo giao diện trên HTML
 async function loadPublicRooms() {
   const list = document.getElementById("roomList");
   const map = document.getElementById("roomMap");
   list.innerHTML = `<div class="col-12 loading-state"><div class="spinner-border text-success mb-3"></div><div>Đang tải danh sách phòng...</div></div>`;
   map.innerHTML = `<div class="loading-state">Đang tải sơ đồ phòng...</div>`;
-
+//check lỗi
   try {
     publicState.rooms = await DormAPI.list("rooms");
     populateFilterOptions(publicState.rooms);
@@ -57,6 +62,7 @@ async function loadPublicRooms() {
 }
 
 function populateFilterOptions(rooms) {
+  //lọc các giá trị không trùng 
   fillSelect("buildingFilter", uniqueValues(rooms, "building"));
   fillSelect("floorFilter", uniqueValues(rooms, "floor"));
   fillSelect("typeFilter", uniqueValues(rooms, "type"));
@@ -64,7 +70,7 @@ function populateFilterOptions(rooms) {
   const amenities = [...new Set(rooms.flatMap((room) => parseAmenities(room.amenities)))].sort();
   fillSelect("amenityFilter", amenities);
 }
-
+//lấy từ danh sách ra một giá trị từ khóa cụ thể
 function uniqueValues(items, key) {
   return [...new Set(items.map((item) => item[key]).filter((value) => value !== undefined && value !== null && value !== ""))]
     .sort((a, b) => String(a).localeCompare(String(b), "vi", { numeric: true }));
@@ -78,7 +84,7 @@ function fillSelect(id, values) {
     return `<option value="${escapedValue}">${escapeHtml(value)}</option>`;
   }).join("");
 }
-
+//Lấy các danh sách phòng khi đã lọc theo các tiêu 
 function getFilteredRooms() {
   return publicState.rooms.filter((room) => {
     const status = getRoomStatus(room);
@@ -97,6 +103,7 @@ function getFilteredRooms() {
   });
 }
 
+//Hiển thị sơ đồ danh phòng giao diện trên bộ lọc
 function renderPublicRooms() {
   const list = document.getElementById("roomList");
   const rooms = getFilteredRooms();
@@ -114,6 +121,7 @@ function renderPublicRooms() {
   });
 }
 
+//Hiển thị sơ đồ phòng ( không bộ lọc)
 function renderRoomMap(rooms) {
   const map = document.getElementById("roomMap");
   if (!rooms.length) {
@@ -141,6 +149,7 @@ function renderRoomMap(rooms) {
   });
 }
 
+//Hàm định dạng giao diện đồng 
 function renderRoomCard(room) {
   const status = getRoomStatus(room);
   const image = getSafeRoomImage(room.image);
@@ -204,7 +213,7 @@ function openRoomModal(roomId) {
   modal.show();
   document.getElementById("openRegisterBtn").addEventListener("click", () => openRegisterModal(room.id));
 }
-
+//Form đăng ký phòng
 function openRegisterModal(roomId) {
   const room = publicState.rooms.find((item) => String(item.id) === String(roomId));
   if (!room) return;
@@ -219,7 +228,7 @@ function openRegisterModal(roomId) {
   bootstrap.Modal.getOrCreateInstance(document.getElementById("roomModal")).hide();
   bootstrap.Modal.getOrCreateInstance(document.getElementById("registerModal")).show();
 }
-
+//Check kiem tra form đăng ký
 async function handleRegisterSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -290,7 +299,7 @@ async function handleRegisterSubmit(event) {
     setButtonLoading(submitButton, false);
   }
 }
-
+//Qr thanh toán
 function openQRModal(amount, note, fullName, studentCode, roomName) {
   const qrUrl = getTransferQRCodeUrl(amount, note);
   document.getElementById("qrImage").src = qrUrl;
@@ -307,7 +316,7 @@ function openQRModal(amount, note, fullName, studentCode, roomName) {
 function getSafeRoomImage(value) {
   return value && isValidImageUrl(value) ? escapeAttribute(value) : PLACEHOLDER_ROOM_IMAGE;
 }
-
+//Cập nhật trạng thái phòng
 function getRoomMapLabel(room, status) {
   if (status === "maintenance") return "Bảo trì";
   if (status === "full") return "Đã đầy";
