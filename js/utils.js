@@ -1,9 +1,11 @@
+//Khai bao thong tin chuyen khoan
 const PLACEHOLDER_ROOM_IMAGE = "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=900&q=80";
 const TRANSFER_QR_IMAGE = "img/payment.png";
 const BANK_NAME = "Ngân hàng VCB ";
 const ACCOUNT_NUMBER = "035821634";
 const ACCOUNT_HOLDER = "DOAN THANH TUNG";
 
+//Kiem ta ky tu dac biệt
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"'`]/g, (char) => ({
     "&": "&amp;",
@@ -18,7 +20,7 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value);
 }
-
+//Ngày nhận phòng
 function getCurrentPaymentMonth() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
