@@ -46,6 +46,74 @@ background: rgba(255, 255, 255, 0.72);
   background: #fb923c;
 }
 
+/* Container chứa các ô phòng */
+.room-map {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+    padding: 10px 0;
+}
+
+/* Từng ô phòng (Tile) */
+.room-map-tile {
+    /* Hiệu ứng Glassmorphism */
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    
+    /* Bo góc và Viền tinh tế */
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 20px; 
+    
+    padding: 20px;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    
+    /* Đổ bóng nhẹ */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Hiệu ứng khi di chuột qua (Hover) */
+.room-map-tile:hover {
+    transform: translateY(-8px);
+    background: #ffffff;
+    border-color: #2563eb; /* Màu xanh primary */
+    box-shadow: 0 15px 30px rgba(37, 99, 235, 0.15);
+}
+
+/* Trạng thái phòng thông qua viền và màu sắc phụ */
+.room-map-tile.available {
+    border-bottom: 5px solid #22c55e; /* Viền dưới màu xanh lá */
+}
+
+.room-map-tile.full {
+    border-bottom: 5px solid #ef4444; /* Viền dưới màu đỏ */
+    opacity: 0.8;
+}
+
+.room-map-tile.maintenance {
+    border-bottom: 5px solid #fb923c; /* Viền dưới màu cam */
+    background: rgba(240, 240, 240, 0.5);
+}
+
+/* Số phòng bên trong ô */
+.room-map-tile .room-number {
+    font-size: 1.25rem;
+    font-weight: 800;
+    display: block;
+    margin-bottom: 5px;
+    color: #1e293b;
+}
+
+/* Thông tin phụ (Loại phòng/Tầng) */
+.room-map-tile .room-info {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+}
 /* ROOM CARD */
 
 .room-card {
