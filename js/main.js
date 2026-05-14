@@ -151,7 +151,7 @@ function renderRoomCard(room) {
           <span class="badge ${getStatusBadgeClass(status)}">${getStatusLabel(status)}</span>
         </div>
         <div class="room-meta mb-2">${room.building || "Chưa rõ tòa"} · Tầng ${room.floor || "?"} · ${room.type || "Chưa rõ loại"}</div>
-        <p class="mb-3">${room.description || "Phòng ký túc xá với tiện ích cơ bản cho sinh viên."}</p>
+        <p class="mb-3">${room.description || "Phòng ký túc xá nhiều tiện ích cho sinh viên."}</p>
         <div class="amenity-list mb-3">${amenities.map((item) => `<span class="badge text-bg-light">${item}</span>`).join("")}</div>
         <div class="mt-auto d-flex align-items-center justify-content-between gap-3">
           <div>
