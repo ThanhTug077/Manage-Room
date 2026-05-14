@@ -1,16 +1,20 @@
+//Cấu hình  MOC 
 const API_BASE_URL = "https://69ead50515c7e2d5126a0f46.mockapi.io/v1";
 
+//Danh sách các tài nguyên truy vấn trong API MOC
 const ENDPOINTS = {
   rooms: "rooms",
   students: "students"
 };
 
+//Hàm xd URL
 function buildUrl(resource, id = "") {
   const endpoint = ENDPOINTS[resource] || resource;
   const suffix = id ? `/${id}` : "";
   return `${API_BASE_URL}/${endpoint}${suffix}`;
 }
 
+//hàm bất đồng hàm này tự động hóa ( chuyển đổi dữ , tự ghép  ,lọc dữ liệu )
 async function requestJson(resource, options = {}) {
   const response = await fetch(buildUrl(resource, options.id), {
     method: options.method || "GET",
@@ -20,6 +24,7 @@ async function requestJson(resource, options = {}) {
     body: options.data ? JSON.stringify(options.data) : undefined
   });
 
+  //Xử lý các và trạng thái nếu có lỗi về 
   if (!response.ok) {
     let detail = response.statusText;
     try {
