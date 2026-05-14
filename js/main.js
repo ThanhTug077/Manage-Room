@@ -73,7 +73,10 @@ function uniqueValues(items, key) {
 function fillSelect(id, values) {
   const select = document.getElementById(id);
   const firstOption = select.options[0].outerHTML;
-  select.innerHTML = firstOption + values.map((value) => `<option value="${value}">${value}</option>`).join("");
+  select.innerHTML = firstOption + values.map((value) => {
+    const escapedValue = escapeAttribute(value);
+    return `<option value="${escapedValue}">${escapeHtml(value)}</option>`;
+  }).join("");
 }
 
 function getFilteredRooms() {
@@ -126,9 +129,10 @@ function renderRoomMap(rooms) {
 
   map.innerHTML = sortedRooms.map((room) => {
     const status = getRoomStatus(room);
-    return `<button class="room-map-tile map-${status}" type="button" data-room-map-id="${room.id}">
-      <strong>${room.name || `Phòng ${room.id}`}</strong>
-      <span>Tầng ${room.floor || "?"} · ${getAvailableBeds(room)} trống</span>
+    const mapLabel = getRoomMapLabel(room, status);
+    return `<button class="room-map-tile map-${escapeAttribute(status)}" type="button" data-room-map-id="${escapeAttribute(room.id)}">
+      <strong>${escapeHtml(room.name || `Phòng ${room.id}`)}</strong>
+      <span>Tầng ${escapeHtml(room.floor || "?")} · ${mapLabel}</span>
     </button>`;
   }).join("");
 
@@ -139,26 +143,27 @@ function renderRoomMap(rooms) {
 
 function renderRoomCard(room) {
   const status = getRoomStatus(room);
-  const image = room.image || PLACEHOLDER_ROOM_IMAGE;
+  const image = getSafeRoomImage(room.image);
   const amenities = parseAmenities(room.amenities).slice(0, 4);
+  const roomName = room.name || "Phòng chưa đặt tên";
 
   return `<div class="col-12 col-md-6 col-xl-4">
     <article class="room-card">
-      <img src="${image}" alt="${room.name || "Phòng ký túc xá"}" onerror="this.src='${PLACEHOLDER_ROOM_IMAGE}'">
+      <img src="${image}" alt="${escapeAttribute(room.name || "Phòng ký túc xá")}" onerror="this.src='${PLACEHOLDER_ROOM_IMAGE}'">
       <div class="card-body p-3">
         <div class="d-flex justify-content-between gap-2 mb-2">
-          <h2 class="h5 mb-0">${room.name || "Phòng chưa đặt tên"}</h2>
+          <h2 class="h5 mb-0">${escapeHtml(roomName)}</h2>
           <span class="badge ${getStatusBadgeClass(status)}">${getStatusLabel(status)}</span>
         </div>
-        <div class="room-meta mb-2">${room.building || "Chưa rõ tòa"} · Tầng ${room.floor || "?"} · ${room.type || "Chưa rõ loại"}</div>
-        <p class="mb-3">${room.description || "Phòng ký túc xá nhiều tiện ích cho sinh viên."}</p>
-        <div class="amenity-list mb-3">${amenities.map((item) => `<span class="badge text-bg-light">${item}</span>`).join("")}</div>
+        <div class="room-meta mb-2">${escapeHtml(room.building || "Chưa rõ tòa")} · Tầng ${escapeHtml(room.floor || "?")} · ${escapeHtml(room.type || "Chưa rõ loại")}</div>
+        <p class="mb-3">${escapeHtml(room.description || "Phòng ký túc xá nhiều tiện ích cho sinh viên.")}</p>
+        <div class="amenity-list mb-3">${amenities.map((item) => `<span class="badge text-bg-light">${escapeHtml(item)}</span>`).join("")}</div>
         <div class="mt-auto d-flex align-items-center justify-content-between gap-3">
           <div>
             <strong>${formatCurrency(room.price)}</strong>
             <div class="room-meta">${getAvailableBeds(room)} giường trống / ${room.capacity || 0}</div>
           </div>
-          <button class="btn btn-success" type="button" data-room-id="${room.id}">Chi tiết</button>
+          <button class="btn btn-success" type="button" data-room-id="${escapeAttribute(room.id)}">Chi tiết</button>
         </div>
       </div>
     </article>
@@ -175,21 +180,21 @@ function openRoomModal(roomId) {
   document.getElementById("roomModalTitle").textContent = room.name || "Chi tiết phòng";
   document.getElementById("roomModalBody").innerHTML = `<div class="row g-3">
     <div class="col-md-5">
-      <img class="modal-img" src="${room.image || PLACEHOLDER_ROOM_IMAGE}" alt="${room.name || "Phòng ký túc xá"}" onerror="this.src='${PLACEHOLDER_ROOM_IMAGE}'">
+      <img class="modal-img" src="${getSafeRoomImage(room.image)}" alt="${escapeAttribute(room.name || "Phòng ký túc xá")}" onerror="this.src='${PLACEHOLDER_ROOM_IMAGE}'">
     </div>
     <div class="col-md-7">
       <div class="d-flex flex-wrap gap-2 mb-3">
         <span class="badge ${getStatusBadgeClass(status)}">${getStatusLabel(status)}</span>
-        <span class="badge text-bg-light">${room.building || "Chưa rõ tòa"}</span>
-        <span class="badge text-bg-light">Tầng ${room.floor || "?"}</span>
-        <span class="badge text-bg-light">${room.type || "Chưa rõ loại"}</span>
+        <span class="badge text-bg-light">${escapeHtml(room.building || "Chưa rõ tòa")}</span>
+        <span class="badge text-bg-light">Tầng ${escapeHtml(room.floor || "?")}</span>
+        <span class="badge text-bg-light">${escapeHtml(room.type || "Chưa rõ loại")}</span>
       </div>
-      <p>${room.description || "Chưa có mô tả chi tiết."}</p>
+      <p>${escapeHtml(room.description || "Chưa có mô tả chi tiết.")}</p>
       <dl class="row mb-3">
         <dt class="col-sm-5">Giá phòng</dt><dd class="col-sm-7">${formatCurrency(room.price)}</dd>
         <dt class="col-sm-5">Sức chứa</dt><dd class="col-sm-7">${room.occupied || 0}/${room.capacity || 0} sinh viên</dd>
         <dt class="col-sm-5">Giường trống</dt><dd class="col-sm-7">${getAvailableBeds(room)}</dd>
-        <dt class="col-sm-5">Tiện nghi</dt><dd class="col-sm-7">${amenitiesToString(room.amenities) || "Chưa cập nhật"}</dd>
+        <dt class="col-sm-5">Tiện nghi</dt><dd class="col-sm-7">${escapeHtml(amenitiesToString(room.amenities) || "Chưa cập nhật")}</dd>
       </dl>
       <button id="openRegisterBtn" class="btn btn-success" type="button" ${canRegister ? "" : "disabled"}>Đăng ký phòng</button>
     </div>
@@ -234,30 +239,51 @@ async function handleRegisterSubmit(event) {
     return;
   }
 
-  const price = Number(room.price || 0);
-  const capacity = Number(room.capacity || 1);
-  const paymentAmount = Math.ceil(price / Math.max(capacity, 1));
-  const paymentMonth = getCurrentPaymentMonth();
-  const paymentNote = buildPaymentNote(data.studentCode || "", room.name || room.id || "", paymentMonth);
-
-  const payload = {
-    ...data,
-    status: "active",
-    paymentAmount,
-    paymentMonth,
-    paymentStatus: "unpaid",
-    paidAt: "",
-    paymentNote
-  };
-
   setButtonLoading(submitButton, true, "Đang gửi...");
   try {
+    const latestRoom = await DormAPI.get("rooms", data.roomId);
+    const latestStatus = getRoomStatus(latestRoom);
+    if (latestStatus !== "available" || getAvailableBeds(latestRoom) <= 0) {
+      showToast("Phòng này hiện không còn chỗ trống", "warning");
+      await loadPublicRooms();
+      return;
+    }
+
+    const price = Number(latestRoom.price || 0);
+    const capacity = Number(latestRoom.capacity || 1);
+    const paymentAmount = Math.ceil(price / Math.max(capacity, 1));
+    const paymentMonth = getCurrentPaymentMonth();
+    const paymentNote = buildPaymentNote(data.studentCode || "", latestRoom.name || latestRoom.id || "", paymentMonth);
+
+    const payload = {
+      ...data,
+      status: "active",
+      paymentAmount,
+      paymentMonth,
+      paymentStatus: "unpaid",
+      paidAt: "",
+      paymentNote
+    };
+
     await DormAPI.create("students", payload);
+    const nextOccupied = Number(latestRoom.occupied || 0) + 1;
+    const nextStatus = nextOccupied >= Number(latestRoom.capacity || 0) ? "full" : "available";
+    await DormAPI.update("rooms", latestRoom.id, {
+      ...latestRoom,
+      occupied: nextOccupied,
+      status: latestRoom.status === "maintenance" ? "maintenance" : nextStatus
+    });
+    publicState.rooms = publicState.rooms.map((item) => (
+      String(item.id) === String(latestRoom.id)
+        ? { ...item, occupied: nextOccupied, status: latestRoom.status === "maintenance" ? "maintenance" : nextStatus }
+        : item
+    ));
+    renderPublicRooms();
     bootstrap.Modal.getInstance(document.getElementById("registerModal")).hide();
     form.reset();
     form.classList.remove("was-validated");
     showToast("Đăng ký thành công! Hãy quét mã QR để thanh toán.", "success");
-    openQRModal(paymentAmount, paymentNote, data.fullName, data.studentCode, room.name || room.id);
+    openQRModal(paymentAmount, paymentNote, data.fullName, data.studentCode, latestRoom.name || latestRoom.id);
   } catch (error) {
     showToast(`Đăng ký thất bại: ${error.message}`, "error");
   } finally {
@@ -270,10 +296,20 @@ function openQRModal(amount, note, fullName, studentCode, roomName) {
   document.getElementById("qrImage").src = qrUrl;
   document.getElementById("qrModalTitle").textContent = "Mã QR thanh toán";
   document.getElementById("qrNote").innerHTML = `
-    <div><strong>Họ tên:</strong> ${fullName || "Chưa có"}</div>
-    <div><strong>Mã SV:</strong> ${studentCode || "Chưa có"}</div>
-    <div><strong>Phòng:</strong> ${roomName || "Chưa có"}</div>
+    <div><strong>Họ tên:</strong> ${escapeHtml(fullName || "Chưa có")}</div>
+    <div><strong>Mã SV:</strong> ${escapeHtml(studentCode || "Chưa có")}</div>
+    <div><strong>Phòng:</strong> ${escapeHtml(roomName || "Chưa có")}</div>
     <div class="mt-2">${buildTransferInstruction(amount, note)}</div>
   `;
   bootstrap.Modal.getOrCreateInstance(document.getElementById("qrModal")).show();
+}
+
+function getSafeRoomImage(value) {
+  return value && isValidImageUrl(value) ? escapeAttribute(value) : PLACEHOLDER_ROOM_IMAGE;
+}
+
+function getRoomMapLabel(room, status) {
+  if (status === "maintenance") return "Bảo trì";
+  if (status === "full") return "Đã đầy";
+  return `${getAvailableBeds(room)} trống`;
 }
