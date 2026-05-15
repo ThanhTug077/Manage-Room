@@ -139,6 +139,15 @@ function isValidImageUrl(value) {
   }
 }
 
+// Lay danh sach anh phong hop le, uu tien field images moi va fallback ve image cu.
+function getRoomImages(room) {
+  const images = Array.isArray(room?.images) ? room.images : [];
+  const validImages = images.filter((image) => image && isValidImageUrl(image));
+  if (validImages.length) return validImages;
+  if (room?.image && isValidImageUrl(room.image)) return [room.image];
+  return [PLACEHOLDER_ROOM_IMAGE];
+}
+
 // Kiem tra cac truong so tien/suc chua phai la so duong.
 function isPositiveNumber(value) {
   return Number(value) > 0;
