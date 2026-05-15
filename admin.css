@@ -8,7 +8,7 @@
   --gray: #64748b;
   --gray-light: #e2e8f0;
   --white: #ffffff;
-  --bg: #ffffff;
+  --bg: #868785;
   --card-bg: rgba(255, 255, 255, 0.8);
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
   --radius: 24px;
@@ -320,6 +320,73 @@ body {
 .modal-footer {
   border-top: 1px solid rgba(0,0,0,0.06);
   padding: 20px 28px;
+}
+
+.image-picker {
+  width: 100%;
+  border: 2px dashed #cbd5e1;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.72);
+  color: var(--gray);
+  padding: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.image-picker.is-valid {
+  border-color: var(--secondary);
+  color: var(--primary-dark);
+}
+
+.image-picker.is-invalid {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.image-preview-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.image-preview-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #e2e8f0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.image-preview-item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.image-remove-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.78);
+  color: #fff;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.image-empty-preview {
+  grid-column: 1 / -1;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  color: var(--gray);
+  padding: 18px;
+  text-align: center;
+  background: rgba(255,255,255,0.58);
 }
 
 /* TOAST */
