@@ -14,8 +14,21 @@ const adminState = {
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "admin";
 const ADMIN_AUTH_KEY = "dormManagerAdminLoggedIn";
-const MAX_ROOM_IMAGE_SIZE = 1024 * 1024;
+const MAX_ROOM_IMAGE_SIZE = 3 * 1024 * 1024;
+/** Uoc luong JSON phong sau khi bo trung image/images[0] — canh bao truoc khi sat gioi han MockAPI */
+const ROOM_PAYLOAD_WARN_CHARS = 65000;
+/** Neu sau nen van vuot, khong goi API (MockAPI thuong tra 413) */
+const ROOM_PAYLOAD_MAX_CHARS = 95000;
 const ROOM_CAPACITY_OPTIONS = [1, 2, 4, 8];
+
+const ROOM_IMAGE_COMPRESSION_TIERS = [
+  { maxDim: 1280, quality: 0.72 },
+  { maxDim: 960, quality: 0.62 },
+  { maxDim: 640, quality: 0.52 },
+  { maxDim: 480, quality: 0.45 },
+  { maxDim: 400, quality: 0.38 },
+  { maxDim: 320, quality: 0.32 }
+];
 
 // Tao ten loai phong tu suc chua, vi du 4 -> "4 nguoi".
 function formatRoomType(capacity) {
@@ -380,90 +393,138 @@ function renderField(field, item) {
   return `<div class="col-md-6"><label class="form-label">${escapedLabel}</label><input class="form-control" name="${escapeAttribute(field.name)}" type="${escapeAttribute(field.type)}" value="${escapedValue}" ${required} ${field.min !== undefined ? `min="${escapeAttribute(field.min)}"` : ""} ${placeholder}>${help}</div>`;
 }
 
-// Field anh phong dung input hidden de luu URL/base64 va nut chon file co preview.
-function renderImageField(value) {
-  const preview = value && isValidImageUrl(value) ? escapeAttribute(value) : PLACEHOLDER_ROOM_IMAGE;
-  const hasImage = Boolean(value);
-
-  return `<div class="col-12">
-    <label class="form-label">Ảnh phòng</label>
-    <input id="roomImageValue" name="image" type="hidden" value="${escapeAttribute(value || "")}">
-    <input id="roomImageFile" class="d-none" type="file" accept="image/*">
-    <button id="roomImagePicker" class="image-picker" type="button">
-      <img id="roomImagePreview" src="${preview}" alt="Ảnh phòng" onerror="this.src='${PLACEHOLDER_ROOM_IMAGE}'">
-      <span>${hasImage ? "Bấm để đổi ảnh" : "Bấm để chọn ảnh từ máy"}</span>
-    </button>
-    <div id="roomImageFeedback" class="form-text">Chỉ chọn file ảnh, dung lượng tối đa 1MB.</div>
-  </div>`;
-}
-
-// Validate file anh va doc thanh data URL de co the luu truc tiep vao MockAPI.
-function bindImagePicker() {
-  const picker = document.getElementById("roomImagePicker");
-  const fileInput = document.getElementById("roomImageFile");
-  const hiddenInput = document.getElementById("roomImageValue");
-  const preview = document.getElementById("roomImagePreview");
-  const feedback = document.getElementById("roomImageFeedback");
-
-  if (!picker || !fileInput || !hiddenInput || !preview || !feedback) return;
-
-  picker.addEventListener("click", () => fileInput.click());
-  fileInput.addEventListener("change", () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      fileInput.value = "";
-      feedback.textContent = "File đã chọn không phải là ảnh.";
-      feedback.classList.add("text-danger");
-      picker.classList.remove("is-valid");
-      picker.classList.add("is-invalid");
-      showToast("Vui lòng chọn đúng file ảnh", "error");
-      return;
-    }
-
-    if (file.size > MAX_ROOM_IMAGE_SIZE) {
-      fileInput.value = "";
-      feedback.textContent = "Ảnh vượt quá 1MB. Hãy chọn ảnh nhỏ hơn.";
-      feedback.classList.add("text-danger");
-      picker.classList.remove("is-valid");
-      picker.classList.add("is-invalid");
-      showToast("Ảnh vượt quá dung lượng 1MB", "error");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.addEventListener("load", () => {
-      hiddenInput.value = reader.result;
-      preview.src = reader.result;
-      picker.querySelector("span").textContent = "Bấm để đổi ảnh";
-      feedback.textContent = `${file.name} đã được chọn.`;
-      feedback.classList.remove("text-danger");
-      feedback.classList.add("text-success");
-      picker.classList.remove("is-invalid");
-      picker.classList.add("is-valid");
-    });
-    reader.readAsDataURL(file);
-  });
-}
-
-// Field anh phong dung input hidden de luu danh sach URL/base64 va preview nhieu thumbnail.
+// Field anh phong: nhieu anh (file + URL), preview thumbnail, anh base64 se duoc nen truoc khi luu.
 function renderImageField(item) {
   const images = getRoomImages(item).filter((image) => image !== PLACEHOLDER_ROOM_IMAGE);
   const imageJson = JSON.stringify(images);
   const hasImage = images.length > 0;
+  const maxMb = MAX_ROOM_IMAGE_SIZE / (1024 * 1024);
 
   return `<div class="col-12">
-    <label class="form-label">Anh phong</label>
+    <label class="form-label">Ảnh phòng</label>
     <input id="roomImageValue" name="image" type="hidden" value="${escapeAttribute(images[0] || "")}">
     <input id="roomImagesValue" name="images" type="hidden" value="${escapeAttribute(imageJson)}">
     <input id="roomImageFile" class="d-none" type="file" accept="image/*" multiple>
     <button id="roomImagePicker" class="image-picker" type="button">
-      <span>${hasImage ? "Bam de them anh" : "Bam de chon anh tu may"}</span>
+      <span>${hasImage ? "Bấm để thêm ảnh từ máy" : "Bấm để chọn ảnh từ máy"}</span>
     </button>
+    <div class="room-image-url-row mt-3">
+      <input id="roomImageUrlInput" class="form-control" type="url" inputmode="url" autocomplete="off" placeholder="https://... (ảnh từ liên kết)">
+      <button id="roomImageUrlAddBtn" class="btn btn-outline-secondary flex-shrink-0" type="button">Thêm URL</button>
+    </div>
     <div id="roomImagePreviewList" class="image-preview-list"></div>
-    <div id="roomImageFeedback" class="form-text">Chi chon file anh, dung luong toi da 1MB/anh.</div>
+    <div id="roomImageFeedback" class="form-text">File tối đa ${maxMb}MB/ảnh. Ảnh từ máy được nén nhiều lần để tránh lỗi 413; ưu tiên URL ảnh (https) nếu vẫn không lưu được.</div>
   </div>`;
+}
+
+function isLikelyImageFile(file) {
+  if (!file) return false;
+  if (file.type && file.type.startsWith("image/")) return true;
+  const name = (file.name || "").toLowerCase();
+  return /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)$/.test(name);
+}
+
+function tryParseHttpRoomImageUrl(raw) {
+  const trimmed = String(raw || "").trim();
+  if (!trimmed) return null;
+  try {
+    const u = new URL(trimmed);
+    if (!["http:", "https:"].includes(u.protocol)) return null;
+    return u.href;
+  } catch (error) {
+    return null;
+  }
+}
+
+function compressRoomImageDataUrl(dataUrl, tier = {}) {
+  const maxDim = tier.maxDim ?? 1280;
+  const quality = tier.quality ?? 0.72;
+  return new Promise((resolve) => {
+    if (!String(dataUrl).startsWith("data:image/")) {
+      resolve(dataUrl);
+      return;
+    }
+    if (/^data:image\/gif/i.test(dataUrl)) {
+      resolve(dataUrl);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let w = img.naturalWidth || img.width || 1;
+        let h = img.naturalHeight || img.height || 1;
+        const scale = Math.min(1, maxDim / Math.max(w, h));
+        w = Math.max(1, Math.round(w * scale));
+        h = Math.max(1, Math.round(h * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, w, h);
+        const jpeg = canvas.toDataURL("image/jpeg", quality);
+        resolve(jpeg.length && jpeg.length < String(dataUrl).length ? jpeg : dataUrl);
+      } catch (error) {
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+/** Bo field image khi da co images — giam nua chuoi trung images[0] trong JSON. */
+function applyRoomPayloadDedupe(data) {
+  if (Array.isArray(data.images) && data.images.length > 0) {
+    delete data.image;
+  }
+}
+
+function getRoomPayloadJsonSize(data) {
+  const payload = { ...data };
+  if (Array.isArray(payload.images) && payload.images.length > 0) {
+    delete payload.image;
+  }
+  return JSON.stringify(payload).length;
+}
+
+async function compressAllRoomDataUrls(data, tier) {
+  const list = Array.isArray(data.images) ? data.images : [];
+  if (list.length > 0) {
+    const out = [];
+    for (const item of list) {
+      out.push(
+        String(item).startsWith("data:image/")
+          ? await compressRoomImageDataUrl(item, tier)
+          : item
+      );
+    }
+    data.images = out;
+    data.image = out[0] || "";
+    return;
+  }
+  if (data.image && String(data.image).startsWith("data:image/")) {
+    data.image = await compressRoomImageDataUrl(data.image, tier);
+  }
+}
+
+async function normalizeRoomImagesForSave(data) {
+  for (let i = 0; i < ROOM_IMAGE_COMPRESSION_TIERS.length; i += 1) {
+    await compressAllRoomDataUrls(data, ROOM_IMAGE_COMPRESSION_TIERS[i]);
+    applyRoomPayloadDedupe(data);
+    if (getRoomPayloadJsonSize(data) <= ROOM_PAYLOAD_MAX_CHARS) {
+      return;
+    }
+  }
+  applyRoomPayloadDedupe(data);
+  if (getRoomPayloadJsonSize(data) > ROOM_PAYLOAD_MAX_CHARS) {
+    throw new Error(
+      "Dữ liệu phòng vẫn quá lớn để gửi API (giới hạn MockAPI). Hãy dùng ảnh URL (https), bớt số ảnh, rút mô tả, hoặc đổi ảnh GIF nặng sang URL."
+    );
+  }
 }
 
 function bindImagePicker() {
@@ -473,49 +534,100 @@ function bindImagePicker() {
   const imagesInput = document.getElementById("roomImagesValue");
   const previewList = document.getElementById("roomImagePreviewList");
   const feedback = document.getElementById("roomImageFeedback");
+  const urlInput = document.getElementById("roomImageUrlInput");
+  const urlAddBtn = document.getElementById("roomImageUrlAddBtn");
 
-  if (!picker || !fileInput || !hiddenInput || !imagesInput || !previewList || !feedback) return;
+  if (!picker || !fileInput || !hiddenInput || !imagesInput || !previewList || !feedback || !urlInput || !urlAddBtn) return;
 
   let images = parseRoomImagesValue(imagesInput.value);
+  const maxMb = MAX_ROOM_IMAGE_SIZE / (1024 * 1024);
 
   function syncImages() {
     hiddenInput.value = images[0] || "";
     imagesInput.value = JSON.stringify(images);
-    picker.querySelector("span").textContent = images.length ? "Bam de them anh" : "Bam de chon anh tu may";
+    picker.querySelector("span").textContent = images.length ? "Bấm để thêm ảnh từ máy" : "Bấm để chọn ảnh từ máy";
     picker.classList.toggle("is-valid", images.length > 0);
     renderRoomImagePreviews(previewList, images);
   }
 
   picker.addEventListener("click", () => fileInput.click());
+
+  urlAddBtn.addEventListener("click", () => {
+    const href = tryParseHttpRoomImageUrl(urlInput.value);
+    if (!href || !isValidImageUrl(href)) {
+      urlInput.classList.add("is-invalid");
+      feedback.textContent = "Nhập URL ảnh hợp lệ (http hoặc https).";
+      feedback.classList.add("text-danger");
+      feedback.classList.remove("text-success");
+      showToast("URL ảnh không hợp lệ", "error");
+      return;
+    }
+    if (images.includes(href)) {
+      showToast("URL này đã có trong danh sách ảnh.", "warning");
+      return;
+    }
+    urlInput.classList.remove("is-invalid");
+    images = [...images, href];
+    syncImages();
+    urlInput.value = "";
+    feedback.textContent = "Đã thêm ảnh từ URL.";
+    feedback.classList.remove("text-danger");
+    feedback.classList.add("text-success");
+    picker.classList.remove("is-invalid");
+    picker.classList.add("is-valid");
+    updateRealtimeValidation(document.getElementById("recordForm"));
+  });
+
+  urlInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      urlAddBtn.click();
+    }
+  });
+
+  urlInput.addEventListener("input", () => urlInput.classList.remove("is-invalid"));
+
   fileInput.addEventListener("change", () => {
     const files = Array.from(fileInput.files || []);
     if (!files.length) return;
 
-    const invalidFile = files.find((file) => !file.type.startsWith("image/"));
+    const invalidFile = files.find((file) => !isLikelyImageFile(file));
     if (invalidFile) {
-      showImagePickerError(fileInput, picker, feedback, "File da chon khong phai la anh.", "Vui long chon dung file anh");
+      showImagePickerError(fileInput, picker, feedback, "Một file đã chọn không được nhận dạng là ảnh.", "Vui lòng chọn đúng file ảnh");
       return;
     }
 
     const oversizedFile = files.find((file) => file.size > MAX_ROOM_IMAGE_SIZE);
     if (oversizedFile) {
-      showImagePickerError(fileInput, picker, feedback, "Anh vuot qua 1MB. Hay chon anh nho hon.", "Anh vuot qua dung luong 1MB");
+      showImagePickerError(
+        fileInput,
+        picker,
+        feedback,
+        `Ảnh vượt quá ${maxMb}MB. Hãy chọn file nhỏ hơn, dùng URL, hoặc nén ảnh trước.`,
+        `Ảnh vượt quá ${maxMb}MB`
+      );
       return;
     }
 
-    Promise.all(files.map(readImageFileAsDataUrl)).then((newImages) => {
-      images = [...images, ...newImages.filter(isValidImageUrl)];
-      syncImages();
-      feedback.textContent = `${newImages.length} anh da duoc chon.`;
-      feedback.classList.remove("text-danger");
-      feedback.classList.add("text-success");
-      picker.classList.remove("is-invalid");
-      picker.classList.add("is-valid");
-      fileInput.value = "";
-      updateRealtimeValidation(document.getElementById("recordForm"));
-    }).catch(() => {
-      showImagePickerError(fileInput, picker, feedback, "Khong the doc file anh da chon.", "Khong the doc anh");
-    });
+    Promise.all(
+      files.map((file) =>
+        readImageFileAsDataUrl(file).then((dataUrl) => compressRoomImageDataUrl(dataUrl, ROOM_IMAGE_COMPRESSION_TIERS[0]))
+      )
+    )
+      .then((newImages) => {
+        images = [...images, ...newImages.filter(isValidImageUrl)];
+        syncImages();
+        feedback.textContent = `${newImages.length} ảnh đã thêm (đã nén nếu là ảnh từ máy).`;
+        feedback.classList.remove("text-danger");
+        feedback.classList.add("text-success");
+        picker.classList.remove("is-invalid");
+        picker.classList.add("is-valid");
+        fileInput.value = "";
+        updateRealtimeValidation(document.getElementById("recordForm"));
+      })
+      .catch(() => {
+        showImagePickerError(fileInput, picker, feedback, "Không thể đọc file ảnh đã chọn.", "Không thể đọc ảnh");
+      });
   });
 
   previewList.addEventListener("click", (event) => {
@@ -523,8 +635,9 @@ function bindImagePicker() {
     if (!removeButton) return;
     images = images.filter((_, index) => index !== Number(removeButton.dataset.removeImageIndex));
     syncImages();
-    feedback.textContent = images.length ? `${images.length} anh dang duoc chon.` : "Chua chon anh phong.";
+    feedback.textContent = images.length ? `${images.length} ảnh đang được chọn.` : "Chưa chọn ảnh phòng.";
     feedback.classList.remove("text-danger");
+    updateRealtimeValidation(document.getElementById("recordForm"));
   });
 
   syncImages();
@@ -541,14 +654,14 @@ function parseRoomImagesValue(value) {
 
 function renderRoomImagePreviews(container, images) {
   if (!images.length) {
-    container.innerHTML = `<div class="image-empty-preview">Chua co anh phong.</div>`;
+    container.innerHTML = `<div class="image-empty-preview">Chưa có ảnh phòng.</div>`;
     return;
   }
 
   container.innerHTML = images.map((image, index) => `
     <div class="image-preview-item">
-      <img src="${escapeAttribute(image)}" alt="Anh phong ${index + 1}" onerror="this.src='${PLACEHOLDER_ROOM_IMAGE}'">
-      <button class="image-remove-btn" type="button" data-remove-image-index="${index}" aria-label="Xoa anh">x</button>
+      <img src="${escapeAttribute(image)}" alt="Ảnh phòng ${index + 1}" onerror="this.src='${PLACEHOLDER_ROOM_IMAGE}'">
+      <button class="image-remove-btn" type="button" data-remove-image-index="${index}" aria-label="Xóa anh">x</button>
     </div>
   `).join("");
 }
@@ -619,6 +732,17 @@ async function handleFormSubmit(event) {
       return;
     }
 
+    if (resource === "rooms") {
+      await normalizeRoomImagesForSave(data);
+      const payloadEstimate = getRoomPayloadJsonSize(data);
+      if (payloadEstimate > ROOM_PAYLOAD_WARN_CHARS) {
+        showToast(
+          "Gói dữ liệu phòng vẫn khá lớn. Nếu lưu thất bại (413), hãy chỉ dùng URL ảnh (https) hoặc bớt ảnh/base64.",
+          "warning"
+        );
+      }
+    }
+
     const isCreatingRoom = resource === "rooms" && !adminState.editingId;
 
     if (adminState.editingId) {
@@ -635,7 +759,15 @@ async function handleFormSubmit(event) {
       showLatestRoomList();
     }
   } catch (error) {
-    showToast(`Lưu dữ liệu thất bại: ${error.message}`, "error");
+    const detail = String(error.message || "");
+    if (detail.includes("413")) {
+      showToast(
+        "Lưu thất bại: API báo dữ liệu quá lớn (413). Hãy dùng ảnh URL (https), bớt số ảnh hoặc rút mô tả; tránh nhiều ảnh base64 cùng lúc.",
+        "error"
+      );
+    } else {
+      showToast(`Lưu dữ liệu thất bại: ${detail}`, "error");
+    }
   } finally {
     setButtonLoading(submitButton, false);
   }
