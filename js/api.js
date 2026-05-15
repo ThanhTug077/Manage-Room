@@ -15,6 +15,7 @@ function buildUrl(resource, id = "") {
 }
 
 // Ham dung chung cho moi request API: gui fetch, parse JSON va nem loi ro rang neu HTTP fail.
+//Bất đồng bộ
 async function requestJson(resource, options = {}) {
   const response = await fetch(buildUrl(resource, options.id), {
     method: options.method || "GET",
@@ -26,6 +27,7 @@ async function requestJson(resource, options = {}) {
 
   if (!response.ok) {
     let detail = response.statusText;
+    //test lỗi
     try {
       const text = await response.text();
       detail = text || detail;
