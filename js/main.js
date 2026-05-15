@@ -154,7 +154,6 @@ function renderRoomMap(rooms) {
 // Tao HTML cho mot card phong trong danh sach public.
 function renderRoomCard(room) {
   const status = getRoomStatus(room);
-  const image = getSafeRoomImage(room.image);
   const amenities = parseAmenities(room.amenities).slice(0, 4);
   const roomName = room.name || "Phòng chưa đặt tên";
 
@@ -215,6 +214,93 @@ function openRoomModal(roomId) {
   const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("roomModal"));
   modal.show();
   document.getElementById("openRegisterBtn").addEventListener("click", () => openRegisterModal(room.id));
+}
+
+function renderRoomCard(room) {
+  const status = getRoomStatus(room);
+  const amenities = parseAmenities(room.amenities).slice(0, 4);
+  const roomName = room.name || "Phong chua dat ten";
+
+  return `<div class="col-12 col-md-6 col-xl-4">
+    <article class="room-card">
+      ${renderRoomCarousel(room, `room-card-carousel-${room.id}`, "room-card-carousel")}
+      <div class="card-body p-3">
+        <div class="d-flex justify-content-between gap-2 mb-2">
+          <h2 class="h5 mb-0">${escapeHtml(roomName)}</h2>
+          <span class="badge ${getStatusBadgeClass(status)}">${getStatusLabel(status)}</span>
+        </div>
+        <div class="room-meta mb-2">${escapeHtml(room.building || "Chua ro toa")} · Tang ${escapeHtml(room.floor || "?")} · ${escapeHtml(room.type || "Chua ro loai")}</div>
+        <p class="mb-3">${escapeHtml(room.description || "Phong ky tuc xa nhieu tien ich cho sinh vien.")}</p>
+        <div class="amenity-list mb-3">${amenities.map((item) => `<span class="badge text-bg-light">${escapeHtml(item)}</span>`).join("")}</div>
+        <div class="mt-auto d-flex align-items-center justify-content-between gap-3">
+          <div>
+            <strong>${formatCurrency(room.price)}</strong>
+            <div class="room-meta">${getAvailableBeds(room)} giuong trong / ${room.capacity || 0}</div>
+          </div>
+          <button class="btn btn-success" type="button" data-room-id="${escapeAttribute(room.id)}">Chi tiet</button>
+        </div>
+      </div>
+    </article>
+  </div>`;
+}
+
+function openRoomModal(roomId) {
+  const room = publicState.rooms.find((item) => String(item.id) === String(roomId));
+  if (!room) return;
+
+  publicState.selectedRoomId = room.id;
+  const status = getRoomStatus(room);
+  const canRegister = status === "available" && getAvailableBeds(room) > 0;
+  document.getElementById("roomModalTitle").textContent = room.name || "Chi tiet phong";
+  document.getElementById("roomModalBody").innerHTML = `<div class="row g-3">
+    <div class="col-md-5">
+      ${renderRoomCarousel(room, `room-modal-carousel-${room.id}`, "room-modal-carousel")}
+    </div>
+    <div class="col-md-7">
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <span class="badge ${getStatusBadgeClass(status)}">${getStatusLabel(status)}</span>
+        <span class="badge text-bg-light">${escapeHtml(room.building || "Chua ro toa")}</span>
+        <span class="badge text-bg-light">Tang ${escapeHtml(room.floor || "?")}</span>
+        <span class="badge text-bg-light">${escapeHtml(room.type || "Chua ro loai")}</span>
+      </div>
+      <p>${escapeHtml(room.description || "Chua co mo ta chi tiet.")}</p>
+      <dl class="row mb-3">
+        <dt class="col-sm-5">Gia phong</dt><dd class="col-sm-7">${formatCurrency(room.price)}</dd>
+        <dt class="col-sm-5">Suc chua</dt><dd class="col-sm-7">${room.occupied || 0}/${room.capacity || 0} sinh vien</dd>
+        <dt class="col-sm-5">Giuong trong</dt><dd class="col-sm-7">${getAvailableBeds(room)}</dd>
+        <dt class="col-sm-5">Tien nghi</dt><dd class="col-sm-7">${escapeHtml(amenitiesToString(room.amenities) || "Chua cap nhat")}</dd>
+      </dl>
+      <button id="openRegisterBtn" class="btn btn-success" type="button" ${canRegister ? "" : "disabled"}>Dang ky phong</button>
+    </div>
+  </div>`;
+
+  const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("roomModal"));
+  modal.show();
+  document.getElementById("openRegisterBtn").addEventListener("click", () => openRegisterModal(room.id));
+}
+
+function renderRoomCarousel(room, carouselId, className = "") {
+  const images = getRoomImages(room);
+  const safeId = escapeAttribute(String(carouselId).replace(/[^a-zA-Z0-9_-]/g, "-"));
+  const controls = images.length > 1 ? `
+    <button class="carousel-control-prev room-carousel-control" type="button" data-bs-target="#${safeId}" data-bs-slide="prev" aria-label="Anh truoc">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    </button>
+    <button class="carousel-control-next room-carousel-control" type="button" data-bs-target="#${safeId}" data-bs-slide="next" aria-label="Anh tiep theo">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    </button>
+  ` : "";
+
+  return `<div id="${safeId}" class="carousel slide room-carousel ${className}" data-bs-ride="false">
+    <div class="carousel-inner">
+      ${images.map((image, index) => `
+        <div class="carousel-item ${index === 0 ? "active" : ""}">
+          <img src="${escapeAttribute(image)}" alt="${escapeAttribute(room.name || "Phong ky tuc xa")} ${index + 1}" onerror="this.src='${PLACEHOLDER_ROOM_IMAGE}'">
+        </div>
+      `).join("")}
+    </div>
+    ${controls}
+  </div>`;
 }
 
 // Mo form dang ky va gan roomId an de submit dung phong da chon.
