@@ -343,6 +343,18 @@ body {
   color: var(--danger);
 }
 
+.room-image-url-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.room-image-url-row .form-control {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
 .image-preview-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
