@@ -185,7 +185,7 @@ async function loadAdminData() {
   }
 }
 
-// Vi du dung jQuery Ajax de doc students theo yeu cau cong nghe cua project.
+// Vi du dung jQuery Ajax de doc students theo yeu cau cua project.
 function loadStudentsWithJquery() {
   return $.ajax({
     url: buildUrl("students"),
@@ -343,7 +343,7 @@ function renderField(field, item) {
   const escapedLabel = escapeHtml(field.label);
 
   if (field.type === "image") {
-    return renderImageField(value);
+    return renderImageField(item || {});
   }
 
   if (field.type === "textarea") {
@@ -447,6 +447,131 @@ function bindImagePicker() {
   });
 }
 
+// Field anh phong dung input hidden de luu danh sach URL/base64 va preview nhieu thumbnail.
+function renderImageField(item) {
+  const images = getRoomImages(item).filter((image) => image !== PLACEHOLDER_ROOM_IMAGE);
+  const imageJson = JSON.stringify(images);
+  const hasImage = images.length > 0;
+
+  return `<div class="col-12">
+    <label class="form-label">Anh phong</label>
+    <input id="roomImageValue" name="image" type="hidden" value="${escapeAttribute(images[0] || "")}">
+    <input id="roomImagesValue" name="images" type="hidden" value="${escapeAttribute(imageJson)}">
+    <input id="roomImageFile" class="d-none" type="file" accept="image/*" multiple>
+    <button id="roomImagePicker" class="image-picker" type="button">
+      <span>${hasImage ? "Bam de them anh" : "Bam de chon anh tu may"}</span>
+    </button>
+    <div id="roomImagePreviewList" class="image-preview-list"></div>
+    <div id="roomImageFeedback" class="form-text">Chi chon file anh, dung luong toi da 1MB/anh.</div>
+  </div>`;
+}
+
+function bindImagePicker() {
+  const picker = document.getElementById("roomImagePicker");
+  const fileInput = document.getElementById("roomImageFile");
+  const hiddenInput = document.getElementById("roomImageValue");
+  const imagesInput = document.getElementById("roomImagesValue");
+  const previewList = document.getElementById("roomImagePreviewList");
+  const feedback = document.getElementById("roomImageFeedback");
+
+  if (!picker || !fileInput || !hiddenInput || !imagesInput || !previewList || !feedback) return;
+
+  let images = parseRoomImagesValue(imagesInput.value);
+
+  function syncImages() {
+    hiddenInput.value = images[0] || "";
+    imagesInput.value = JSON.stringify(images);
+    picker.querySelector("span").textContent = images.length ? "Bam de them anh" : "Bam de chon anh tu may";
+    picker.classList.toggle("is-valid", images.length > 0);
+    renderRoomImagePreviews(previewList, images);
+  }
+
+  picker.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    const files = Array.from(fileInput.files || []);
+    if (!files.length) return;
+
+    const invalidFile = files.find((file) => !file.type.startsWith("image/"));
+    if (invalidFile) {
+      showImagePickerError(fileInput, picker, feedback, "File da chon khong phai la anh.", "Vui long chon dung file anh");
+      return;
+    }
+
+    const oversizedFile = files.find((file) => file.size > MAX_ROOM_IMAGE_SIZE);
+    if (oversizedFile) {
+      showImagePickerError(fileInput, picker, feedback, "Anh vuot qua 1MB. Hay chon anh nho hon.", "Anh vuot qua dung luong 1MB");
+      return;
+    }
+
+    Promise.all(files.map(readImageFileAsDataUrl)).then((newImages) => {
+      images = [...images, ...newImages.filter(isValidImageUrl)];
+      syncImages();
+      feedback.textContent = `${newImages.length} anh da duoc chon.`;
+      feedback.classList.remove("text-danger");
+      feedback.classList.add("text-success");
+      picker.classList.remove("is-invalid");
+      picker.classList.add("is-valid");
+      fileInput.value = "";
+      updateRealtimeValidation(document.getElementById("recordForm"));
+    }).catch(() => {
+      showImagePickerError(fileInput, picker, feedback, "Khong the doc file anh da chon.", "Khong the doc anh");
+    });
+  });
+
+  previewList.addEventListener("click", (event) => {
+    const removeButton = event.target.closest("[data-remove-image-index]");
+    if (!removeButton) return;
+    images = images.filter((_, index) => index !== Number(removeButton.dataset.removeImageIndex));
+    syncImages();
+    feedback.textContent = images.length ? `${images.length} anh dang duoc chon.` : "Chua chon anh phong.";
+    feedback.classList.remove("text-danger");
+  });
+
+  syncImages();
+}
+
+function parseRoomImagesValue(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed.filter((image) => image && isValidImageUrl(image)) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function renderRoomImagePreviews(container, images) {
+  if (!images.length) {
+    container.innerHTML = `<div class="image-empty-preview">Chua co anh phong.</div>`;
+    return;
+  }
+
+  container.innerHTML = images.map((image, index) => `
+    <div class="image-preview-item">
+      <img src="${escapeAttribute(image)}" alt="Anh phong ${index + 1}" onerror="this.src='${PLACEHOLDER_ROOM_IMAGE}'">
+      <button class="image-remove-btn" type="button" data-remove-image-index="${index}" aria-label="Xoa anh">x</button>
+    </div>
+  `).join("");
+}
+
+function readImageFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", reject);
+    reader.readAsDataURL(file);
+  });
+}
+
+function showImagePickerError(fileInput, picker, feedback, message, toastMessage) {
+  fileInput.value = "";
+  feedback.textContent = message;
+  feedback.classList.add("text-danger");
+  feedback.classList.remove("text-success");
+  picker.classList.remove("is-valid");
+  picker.classList.add("is-invalid");
+  showToast(toastMessage, "error");
+}
+
 // Neu nguoi dung chon suc chua nhung chua nhap loai phong, goi y placeholder tu suc chua.
 function bindRoomTypeSuggestion(form) {
   const capacityField = form.querySelector('[name="capacity"]');
@@ -523,6 +648,10 @@ function readFormData(form) {
     if (data[key] !== undefined && data[key] !== "") data[key] = Number(data[key]);
   });
   if (data.amenities !== undefined) data.amenities = parseAmenities(data.amenities);
+  if (data.images !== undefined) {
+    data.images = parseRoomImagesValue(data.images);
+    data.image = data.images[0] || "";
+  }
   return data;
 }
 
@@ -535,6 +664,7 @@ function validateRecord(data) {
     return value !== undefined && value !== null && String(value).trim() !== "";
   });
   const imageValid = data.image === undefined || isValidImageUrl(data.image);
+  const imagesValid = data.images === undefined || (Array.isArray(data.images) && data.images.every(isValidImageUrl));
   const moneyValid = data.price === undefined || isPositiveNumber(data.price);
   const amountValid = data.amount === undefined || isPositiveNumber(data.amount);
   const paymentAmountValid = data.paymentAmount === undefined || isPositiveNumber(data.paymentAmount);
@@ -543,7 +673,7 @@ function validateRecord(data) {
   const capacityValid = data.capacity === undefined || allowedCapacities.includes(Number(data.capacity));
   const occupiedValid = data.occupied === undefined || Number(data.occupied) >= 0;
   const bedCountValid = data.capacity === undefined || data.occupied === undefined || Number(data.occupied) <= Number(data.capacity);
-  return requiredValid && imageValid && moneyValid && amountValid && paymentAmountValid && floorValid && capacityValid && occupiedValid && bedCountValid;
+  return requiredValid && imageValid && imagesValid && moneyValid && amountValid && paymentAmountValid && floorValid && capacityValid && occupiedValid && bedCountValid;
 }
 
 // Tu dong chuan hoa trang thai phong tu occupied/capacity, rieng maintenance duoc giu nguyen.
@@ -564,6 +694,10 @@ function applyCustomValidation(form, data) {
   const imageInput = form.querySelector('[name="image"]');
   if (imageInput && data.image && !isValidImageUrl(data.image)) {
     imageInput.setCustomValidity("Ảnh không hợp lệ.");
+  }
+  const imagesInput = form.querySelector('[name="images"]');
+  if (imagesInput && data.images && !data.images.every(isValidImageUrl)) {
+    imagesInput.setCustomValidity("Danh sach anh khong hop le.");
   }
 }
 
