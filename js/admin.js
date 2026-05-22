@@ -998,3 +998,39 @@ async function clearPaymentOnStudent(studentId) {
     paymentNote: ""
   });
 }
+
+// YÊU CẦU 4: Sử dụng jQuery
+// - Selector: $('#quickHelpBtn'), $('#quickHelpPanel'), v.v.
+// - Events (ít nhất 2): .on('click'), .click()
+// - Hiệu ứng (ít nhất 2): .slideDown(), .fadeOut(), .fadeIn(), .hide()
+// - Thao tác DOM: .html()
+$(document).ready(function() {
+  const helpContent = `
+    <ul class="mb-0 ps-3" style="padding-left: 1rem">
+      <li><strong>Phòng:</strong> Thêm, sửa, xóa thông tin phòng.</li>
+      <li><strong>Sinh viên:</strong> Cập nhật danh sách ở.</li>
+      <li><strong>Thanh toán:</strong> Quản lý đóng tiền phòng.</li>
+    </ul>
+    <hr>
+    <div class="small text-muted">💡 Mẹo: Có thể dùng <strong>URL ảnh</strong> thay vì tải file để tránh lỗi 413.</div>
+  `;
+
+  // Thao tác DOM bằng jQuery (.html)
+  $('#helpContent').html(helpContent);
+
+  // Sự kiện 1: click mở panel
+  $('#quickHelpBtn').on('click', function() {
+    // Hiệu ứng 1: slideDown
+    $('#quickHelpPanel').slideDown(300);
+    $(this).hide(); // Hiệu ứng hide
+  });
+
+  // Sự kiện 2: click đóng panel
+  $('#closeHelpBtn').click(function() {
+    // Hiệu ứng 2: fadeOut
+    $('#quickHelpPanel').fadeOut(200, function() {
+      // Hiệu ứng fadeIn
+      $('#quickHelpBtn').fadeIn(200);
+    });
+  });
+});
