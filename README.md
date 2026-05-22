@@ -4,8 +4,9 @@ Ung dung quan ly ky tuc xa dung HTML, CSS, Bootstrap 5, JavaScript thuan, jQuery
 
 # Tài khoản Đăng Nhập
 
-Username: admin
-Password: admin
+Username: admin;
+
+Password: admin;
 
 ## Cau hinh MockAPI
 
