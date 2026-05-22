@@ -271,7 +271,7 @@ function renderTableMarkup(resource, items) {
   if (resource === "rooms") {
     return `<thead><tr><th>Phòng</th><th>Tòa</th><th>Tầng</th><th>Loại</th><th>Chỗ ở</th><th>Giá</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead>
       <tbody>${items.map((room) => rowActions(room, `
-        <td><strong>${escapeHtml(room.name || "")}</strong></td>
+        <td><strong class="room-name">${escapeHtml(room.name || "")}</strong></td>
         <td>${escapeHtml(room.building || "")}</td>
         <td>${escapeHtml(room.floor || "")}</td>
         <td>${escapeHtml(room.type || "")}</td>
@@ -282,26 +282,27 @@ function renderTableMarkup(resource, items) {
   }
 
   if (resource === "students") {
-    return `<thead><tr><th>Sinh viên</th><th>Mã SV</th><th>Liên hệ</th><th>Phòng</th><th>Ngày vào</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead>
+    return `<thead><tr><th>Sinh viên</th><th>Mã SV</th><th>Liên hệ</th><th>Phòng</th><th>Ngày vào</th><th>Trạng thái</th><th>Thanh toán</th><th class="text-end">Thao tác</th></tr></thead>
       <tbody>${items.map((student) => rowActions(student, `
-        <td><strong>${escapeHtml(student.fullName || "")}</strong></td>
+        <td><strong class="student-name">${escapeHtml(student.fullName || "")}</strong></td>
         <td>${escapeHtml(student.studentCode || "")}</td>
         <td>${escapeHtml(student.phone || "")}<br><span class="text-muted">${escapeHtml(student.email || "")}</span></td>
         <td>${escapeHtml(getRoomName(student.roomId))}</td>
         <td>${formatDate(student.checkInDate)}</td>
         <td><span class="badge ${getStatusBadgeClass(student.status)}">${getStatusLabel(student.status)}</span></td>
+        <td><span class="badge ${getStatusBadgeClass(student.paymentStatus)}">${getPaymentLabel(student.paymentStatus)}</span></td>
       `)).join("")}</tbody>`;
   }
 
   return `<thead><tr><th>Sinh viên</th><th>Phòng</th><th>Tháng</th><th>Số tiền</th><th>Nội dung CK</th><th>Ngày trả</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead>
     <tbody>${items.map((payment) => rowActions(payment, `
-      <td>${escapeHtml(getStudentName(payment.studentId))}</td>
+      <td><span class="student-name">${escapeHtml(getStudentName(payment.studentId))}</span></td>
       <td>${escapeHtml(getRoomName(payment.roomId))}</td>
       <td>${escapeHtml(payment.paymentMonth || "")}</td>
       <td>${formatCurrency(payment.paymentAmount)}</td>
       <td>${escapeHtml(payment.paymentNote || "")}</td>
       <td>${formatDate(payment.paidAt)}</td>
-      <td><span class="badge ${getStatusBadgeClass(payment.paymentStatus)}">${getStatusLabel(payment.paymentStatus)}</span></td>
+      <td><span class="badge ${getStatusBadgeClass(payment.paymentStatus)} ${payment.paymentStatus === "paid" ? "badge-completed" : ""}">${getPaymentLabel(payment.paymentStatus)}</span></td>
     `)).join("")}</tbody>`;
 }
 
@@ -344,6 +345,7 @@ function openFormModal(item = null) {
   bindImagePicker();
   bindRoomTypeSuggestion(form);
   bindRealtimeValidation(form);
+  bindPaymentStatusHandler(form);
   bootstrap.Modal.getOrCreateInstance(document.getElementById("recordModal")).show();
 }
 
@@ -379,7 +381,7 @@ function renderField(field, item) {
     if (adminState.currentResource === "payments" && adminState.editingId) {
       return `<div class="col-md-6"><label class="form-label">${escapedLabel}</label>
         <input name="${escapeAttribute(field.name)}" type="hidden" value="${escapedValue}">
-        <input class="form-control" type="text" value="${escapeAttribute(getStudentName(value))}" disabled>
+        <input class="form-control student-name" type="text" value="${escapeAttribute(getStudentName(value))}" disabled>
         <div class="form-text">Không đổi sinh viên khi sửa thanh toán hiện có.</div>
       </div>`;
     }
@@ -833,6 +835,31 @@ function applyCustomValidation(form, data) {
   }
 }
 
+// Khi chon trang thai thanh toán = "paid", tu dong dien ngay thanh toan hom nay va enable field.
+// Neu chon unpaid/overdue => xoa va disable paidAt de tranh nhap sai.
+function bindPaymentStatusHandler(form) {
+  const statusSelect = form.querySelector('[name="paymentStatus"]');
+  const paidAtInput = form.querySelector('[name="paidAt"]');
+  if (!statusSelect || !paidAtInput) return;
+
+  function updatePaidAt() {
+    if (statusSelect.value === "paid") {
+      if (!paidAtInput.value) {
+        paidAtInput.value = new Date().toISOString().split("T")[0];
+      }
+      paidAtInput.disabled = false;
+      paidAtInput.readOnly = false;
+    } else {
+      paidAtInput.value = "";
+      paidAtInput.disabled = true;
+      paidAtInput.readOnly = true;
+    }
+  }
+
+  statusSelect.addEventListener("change", updatePaidAt);
+  updatePaidAt();
+}
+
 // Bat validate realtime cho form moi render.
 function bindRealtimeValidation(form) {
   form.querySelectorAll("input, select, textarea").forEach((field) => {
@@ -941,6 +968,12 @@ function getRoomName(id) {
 function getStudentName(id) {
   const student = adminState.students.find((item) => String(item.id) === String(id));
   return student ? student.fullName : id || "Chưa chọn";
+}
+
+// Hien thi nhan trang thai thanh toán kem icon hoan thanh neu da dong.
+function getPaymentLabel(status) {
+  if (status === "paid") return "✅ " + getStatusLabel(status);
+  return getStatusLabel(status);
 }
 
 // Tao dong payment tu student vi MockAPI dang luu payment trong resource students.

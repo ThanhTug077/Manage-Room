@@ -156,7 +156,7 @@ body {
    ═══════════════════════════════════════ */
 .form-label {
   font-weight: 600;
-  color: var(--text-body);
+  color: #e2e4e8;
   font-size: 0.85rem;
   margin-bottom: 6px;
 }
@@ -179,7 +179,7 @@ body {
 }
 
 .form-control::placeholder {
-  color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.55);
 }
 
 .form-select option {
@@ -400,7 +400,7 @@ body {
 .table {
   border-collapse: separate;
   border-spacing: 0 8px;
-  color: var(--text-body);
+  color: #e2e4e8;
 }
 
 .table thead th {
@@ -498,6 +498,16 @@ body {
 .badge-soft-warning { background: rgba(245,158,11,0.15); color: #fbbf24; }
 .badge-soft-danger { background: rgba(239,68,68,0.15); color: #f87171; }
 .badge-soft-secondary { background: rgba(255,255,255,0.07); color: var(--text-muted); }
+
+.badge-completed {
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+td .student-name,
+strong.room-name {
+  color: #000;
+}
 
 /* ═══════════════════════════════════════
    MODALS
