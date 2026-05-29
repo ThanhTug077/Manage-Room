@@ -1,9 +1,5 @@
-// Cac hang so dung chung cho anh phong mac dinh va thong tin thanh toan.
+// Cac hang so dung chung cho anh phong mac dinh.
 const PLACEHOLDER_ROOM_IMAGE = "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=900&q=80";
-const TRANSFER_QR_IMAGE = "img/payment.png";
-const BANK_NAME = "Ngân hàng VCB ";
-const ACCOUNT_NUMBER = "035821634";
-const ACCOUNT_HOLDER = "DOAN THANH TUNG";
 
 // Chuyen ky tu dac biet thanh HTML entity de tranh chen HTML/script vao giao dien.
 function escapeHtml(value) {
@@ -37,19 +33,47 @@ function buildPaymentNote(studentCode, roomNameOrId, paymentMonth) {
 function buildTransferInstruction(amount, note) {
   return `Số tiền chuyển khoản: <strong>${formatCurrency(amount)}</strong><br>` +
     `Nội dung chuyển khoản: <strong>${escapeHtml(note)}</strong><br>` +
-    `Ngân hàng nhận: <strong>${escapeHtml(BANK_NAME)}</strong><br>` +
-    `Số tài khoản: <strong>${escapeHtml(ACCOUNT_NUMBER)}</strong><br>` +
-    `Chủ tài khoản: <strong>${escapeHtml(ACCOUNT_HOLDER)}</strong>`;
+    `Ngân hàng nhận: <strong>${escapeHtml(CONFIG.BANK_NAME)}</strong><br>` +
+    `Số tài khoản: <strong>${escapeHtml(CONFIG.ACCOUNT_NUMBER)}</strong><br>` +
+    `Chủ tài khoản: <strong>${escapeHtml(CONFIG.ACCOUNT_HOLDER)}</strong>`;
 }
 
 // Tao ban text thuan cua thong tin chuyen khoan neu can copy/ghi log.
 function buildTransferText(amount, note) {
-  return `Ngân hàng: ${BANK_NAME}\nSố tài khoản: ${ACCOUNT_NUMBER}\nChủ tài khoản: ${ACCOUNT_HOLDER}\nSố tiền: ${formatCurrency(amount)}\nNội dung: ${note}`;
+  return `Ngân hàng: ${CONFIG.BANK_NAME}\nSố tài khoản: ${CONFIG.ACCOUNT_NUMBER}\nChủ tài khoản: ${CONFIG.ACCOUNT_HOLDER}\nSố tiền: ${formatCurrency(amount)}\nNội dung: ${note}`;
 }
 
-// Hien tai dung mot anh QR co dinh trong thu muc img.
+// Tra ve anh QR tinh trong thu muc img lam fallback.
 function getTransferQRCodeUrl(amount, note) {
-  return TRANSFER_QR_IMAGE;
+  return CONFIG.TRANSFER_QR_IMAGE;
+}
+
+// Goi VietQR API (api.vietqr.io/v1/generate) de lay QR code dong.
+async function generateVietQR(amount, content) {
+  try {
+    const response = await fetch(CONFIG.VIETQR_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": CONFIG.VIETQR_API_KEY
+      },
+      body: JSON.stringify({
+        accountNo: CONFIG.ACCOUNT_NUMBER,
+        accountName: CONFIG.ACCOUNT_HOLDER,
+        acqId: CONFIG.BANK_BIN,
+        addInfo: content,
+        amount: String(amount),
+        format: "vietqr_net"
+      })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result = await response.json();
+    if (result.code !== "00") throw new Error(result.desc || "VietQR API error");
+    return result.data.qrDataURL;
+  } catch (error) {
+    console.error("generateVietQR failed:", error);
+    return null;
+  }
 }
 
 // Format so tien theo tien Viet Nam de hien thi thong nhat tren public va admin.

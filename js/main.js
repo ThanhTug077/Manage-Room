@@ -329,7 +329,7 @@ async function handleRegisterSubmit(event) {
     form.reset();
     form.classList.remove("was-validated");
     showToast("Đăng ký thành công! Hãy quét mã QR để thanh toán.", "success");
-    openQRModal(paymentAmount, paymentNote, data.fullName, data.studentCode, latestRoom.name || latestRoom.id);
+    await openQRModal(paymentAmount, paymentNote, data.fullName, data.studentCode, latestRoom.name || latestRoom.id);
   } catch (error) {
     showToast(`Đăng ký thất bại: ${error.message}`, "error");
   } finally {
@@ -338,9 +338,9 @@ async function handleRegisterSubmit(event) {
 }
 
 // Hien modal QR sau khi dang ky thanh cong, kem thong tin sinh vien va noi dung chuyen khoan.
-function openQRModal(amount, note, fullName, studentCode, roomName) {
-  const qrUrl = getTransferQRCodeUrl(amount, note);
-  document.getElementById("qrImage").src = qrUrl;
+async function openQRModal(amount, note, fullName, studentCode, roomName) {
+  const qrUrl = await generateVietQR(amount, note) || getTransferQRCodeUrl(amount, note);
+  document.getElementById("payment-qr").src = qrUrl;
   document.getElementById("qrModalTitle").textContent = "Mã QR thanh toán";
   document.getElementById("qrNote").innerHTML = `
     <div><strong>Họ tên:</strong> ${escapeHtml(fullName || "Chưa có")}</div>
