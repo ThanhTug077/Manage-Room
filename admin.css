@@ -506,7 +506,7 @@ body {
 
 td .student-name,
 strong.room-name {
-  color: #000;
+  color: var(--text-white);
 }
 
 /* ═══════════════════════════════════════
