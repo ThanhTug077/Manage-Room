@@ -1,6 +1,5 @@
 <!doctype html>
-<html lang="vi">
-
+<html lang="vi" data-theme="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,21 +8,38 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
     <!-- ═══ NAVBAR ═══ -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container">
             <a class="navbar-brand" href="index.html">DormManager</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#publicNav"
-                aria-controls="publicNav" aria-expanded="false" aria-label="Mở menu">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <div class="navbar-actions">
+                <button id="publicThemeToggle" class="theme-btn" type="button" title="Chuyển giao diện">
+                    <svg class="theme-icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg class="theme-icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                    </svg>
+                </button>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#publicNav"
+                    aria-controls="publicNav" aria-expanded="false" aria-label="Mở menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
             <div class="collapse navbar-collapse" id="publicNav">
                 <div class="navbar-nav ms-auto">
                     <a class="nav-link active" href="index.html">Trang chủ</a>
                     <a class="nav-link" href="#roomSection">Phòng</a>
-                    <a class="nav-link" href="#aboutSection">Giới thiệu</a>
+                    <a class="nav-link" href="#whySection">Giới thiệu</a>
                     <a class="nav-link" href="admin.html">Quản lý</a>
                 </div>
             </div>
@@ -37,9 +53,13 @@
             <p class="hero-subtitle">Luxury Dormitory & Best Living</p>
             <h1 class="hero-title">DORM MANAGER</h1>
             <a href="#roomSection" class="hero-btn">Xem phòng</a>
+            <div class="hero-stats-inline">
+                <span class="hero-stat"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> 50+ phòng</span>
+                <span class="hero-stat"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg> 500+ sinh viên</span>
+                <span class="hero-stat"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg> 15+ tiện ích</span>
+            </div>
         </div>
 
-        <!-- Booking Bar (Filter) -->
         <div class="booking-bar">
             <div class="container">
                 <form id="publicFilters">
@@ -83,8 +103,7 @@
                             </select>
                         </div>
                         <div class="col-12 col-lg-1 d-flex justify-content-end">
-                            <button id="resetFiltersBtn" class="btn btn-outline-secondary w-100" type="button">Xóa
-                                lọc</button>
+                            <button id="resetFiltersBtn" class="btn btn-outline-secondary w-100" type="button">Xóa lọc</button>
                         </div>
                     </div>
                 </form>
@@ -94,15 +113,13 @@
 
     <!-- ═══ MAIN CONTENT ═══ -->
     <main class="container app-shell" id="roomSection">
-        <!-- Section Heading -->
         <section class="section-heading">
-            <h2>Loại phòng</h2>
+            <h2>Danh sách phòng</h2>
             <p>Khám phá các loại phòng ký túc xá phù hợp với nhu cầu của bạn</p>
             <span id="resultCount" class="badge mt-2">0 phòng</span>
         </section>
 
-        <!-- Room Map Panel -->
-        <section class="room-map-panel mb-5">
+        <section class="room-map-panel mb-5 fade-in-up">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
                 <div>
                     <h2 class="h5 mb-1">Sơ đồ phòng</h2>
@@ -114,42 +131,57 @@
                     <span><i class="legend-dot map-maintenance"></i>Bảo trì</span>
                 </div>
             </div>
+            <div id="mapFilterTabs" class="map-filter-tabs"></div>
             <div id="roomMap" class="room-map" aria-live="polite"></div>
         </section>
 
-        <!-- Room Cards Grid -->
         <section id="roomList" class="row g-4" aria-live="polite"></section>
     </main>
 
-    <!-- ═══ ABOUT SECTION ═══ -->
-    <section class="about-section" id="aboutSection">
+    <!-- ═══ PRICE SHOWCASE ═══ -->
+    <section class="price-section">
         <div class="container">
-            <div class="row g-4 align-items-center">
-                <div class="col-lg-6">
-                    <div class="about-grid">
-                        <img src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80"
-                            alt="Phòng ký túc xá cao cấp" loading="lazy">
-                        <img src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=600&q=80"
-                            alt="Nội thất phòng" loading="lazy">
-                        <img src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=600&q=80"
-                            alt="Không gian sống" loading="lazy">
+            <div class="section-heading">
+                <h2>Bảng giá phòng</h2>
+                <p>Lựa chọn phòng phù hợp với nhu cầu và ngân sách của bạn</p>
+            </div>
+            <div id="priceGrid" class="price-grid">
+                <div class="price-card skeleton-box" style="height:200px"></div>
+                <div class="price-card skeleton-box" style="height:200px"></div>
+                <div class="price-card skeleton-box" style="height:200px"></div>
+                <div class="price-card skeleton-box" style="height:200px"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ WHY CHOOSE US ═══ -->
+    <section class="why-section fade-in-up" id="whySection">
+        <div class="container">
+            <div class="section-heading">
+                <h2>Tại sao chọn DormManager?</h2>
+                <p>Chúng tôi cam kết mang đến trải nghiệm sống tốt nhất cho sinh viên</p>
+            </div>
+            <div class="why-grid">
+                <div class="why-card">
+                    <div class="why-icon-wrap">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     </div>
+                    <h3>Vị trí đắc địa</h3>
+                    <p>Nằm ngay trung tâm thành phố, cách trường học chỉ 5 phút di chuyển. Gần các trung tâm thương mại, bệnh viện và khu vui chơi giải trí.</p>
                 </div>
-                <div class="col-lg-6">
-                    <p class="about-label">Dorm Manager Resort</p>
-                    <h2 class="about-title">Khám phá vị trí</h2>
-                    <p class="about-text">
-                        Ký túc xá DormManager nằm tại vị trí đắc địa, gần trung tâm thành phố, thuận tiện
-                        cho sinh viên di chuyển đến trường và các tiện ích xung quanh.
-                        Với thiết kế hiện đại, không gian sống thoải mái và đầy đủ tiện nghi,
-                        chúng tôi cam kết mang đến trải nghiệm sống tốt nhất cho sinh viên.
-                    </p>
-                    <p class="about-text">
-                        Mỗi phòng được trang bị điều hòa, WiFi tốc độ cao, giường tầng chất lượng cao,
-                        và hệ thống an ninh 24/7. Khuôn viên xanh mát với khu vực thể thao,
-                        canteen và phòng tự học phục vụ nhu cầu đa dạng của sinh viên.
-                    </p>
-                    <a href="#roomSection" class="about-btn">Chi tiết</a>
+                <div class="why-card">
+                    <div class="why-icon-wrap">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    </div>
+                    <h3>Giá cả hợp lý</h3>
+                    <p>Chi phí thuê phòng cạnh tranh nhất thị trường, đã bao gồm điện nước, wifi và phí dịch vụ. Thanh toán linh hoạt theo tháng.</p>
+                </div>
+                <div class="why-card">
+                    <div class="why-icon-wrap">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+                    </div>
+                    <h3>Hỗ trợ tận tình</h3>
+                    <p>Đội ngũ quản lý nhiệt tình, hỗ trợ 24/7 qua điện thoại và tin nhắn. Giải quyết mọi vấn đề của sinh viên trong thời gian nhanh nhất.</p>
                 </div>
             </div>
         </div>
@@ -167,15 +199,15 @@
                     </p>
                 </div>
                 <div class="col-6 col-lg-2">
-                    <h3 class="h6 mb-3" style="color: var(--accent-gold);">Liên kết</h3>
+                    <h3 class="h6 mb-3 footer-heading">Liên kết</h3>
                     <ul class="footer-links">
                         <li><a href="#roomSection">Phòng</a></li>
-                        <li><a href="#aboutSection">Giới thiệu</a></li>
+                        <li><a href="#whySection">Giới thiệu</a></li>
                         <li><a href="admin.html">Quản lý</a></li>
                     </ul>
                 </div>
                 <div class="col-6 col-lg-3">
-                    <h3 class="h6 mb-3" style="color: var(--accent-gold);">Liên hệ</h3>
+                    <h3 class="h6 mb-3 footer-heading">Liên hệ</h3>
                     <ul class="footer-links">
                         <li><a href="#">📍 123 Đường ABC, Quận 1, TP.HCM</a></li>
                         <li><a href="#">📞 (028) 1234 5678</a></li>
@@ -183,7 +215,7 @@
                     </ul>
                 </div>
                 <div class="col-lg-3">
-                    <h3 class="h6 mb-3" style="color: var(--accent-gold);">Giờ làm việc</h3>
+                    <h3 class="h6 mb-3 footer-heading">Giờ làm việc</h3>
                     <ul class="footer-links">
                         <li><a href="#">Thứ 2 - Thứ 6: 8:00 - 17:00</a></li>
                         <li><a href="#">Thứ 7: 8:00 - 12:00</a></li>
@@ -214,44 +246,62 @@
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <form id="registerForm" class="modal-content" novalidate>
                 <div class="modal-header">
-                    <h2 id="registerModalTitle" class="modal-title h5">Đăng ký phòng</h2>
+                    <h2 id="registerModalTitle" class="modal-title h5">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-right:8px;vertical-align:-3px">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        Đăng ký phòng
+                    </h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
                 <div class="modal-body">
                     <input id="registerRoomId" name="roomId" type="hidden">
-                    <div class="row g-3">
+                    <div id="registerRoomSummary" class="mb-4"></div>
+                    <div class="form-divider"><span>Thông tin sinh viên</span></div>
+                    <div class="row g-4 mt-2">
                         <div class="col-md-6">
-                            <label class="form-label" for="registerFullName">Họ tên</label>
-                            <input id="registerFullName" class="form-control" name="fullName" type="text" required>
-                            <div class="invalid-feedback">Vui lòng nhập họ tên.</div>
+                            <div class="input-icon-group">
+                                <svg class="input-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8"/></svg>
+                                <input id="registerFullName" class="form-control icon-input" name="fullName" type="text" placeholder="Họ tên sinh viên" required autocomplete="name">
+                                <div class="invalid-feedback">Vui lòng nhập họ tên.</div>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="registerStudentCode">Mã sinh viên</label>
-                            <input id="registerStudentCode" class="form-control" name="studentCode" type="text"
-                                required>
-                            <div class="invalid-feedback">Vui lòng nhập mã sinh viên.</div>
+                            <div class="input-icon-group">
+                                <svg class="input-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                <input id="registerStudentCode" class="form-control icon-input" name="studentCode" type="text" placeholder="Mã số sinh viên" required autocomplete="username">
+                                <div class="invalid-feedback">Vui lòng nhập mã sinh viên.</div>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="registerEmail">Email</label>
-                            <input id="registerEmail" class="form-control" name="email" type="email" required>
-                            <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
+                            <div class="input-icon-group">
+                                <svg class="input-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                <input id="registerEmail" class="form-control icon-input" name="email" type="email" placeholder="Email" required autocomplete="email">
+                                <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="registerPhone">Số điện thoại</label>
-                            <input id="registerPhone" class="form-control" name="phone" type="tel" required>
-                            <div class="invalid-feedback">Vui lòng nhập số điện thoại.</div>
+                            <div class="input-icon-group">
+                                <svg class="input-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                                <input id="registerPhone" class="form-control icon-input" name="phone" type="tel" placeholder="Số điện thoại" required autocomplete="tel">
+                                <div class="invalid-feedback">Vui lòng nhập số điện thoại.</div>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="registerCheckInDate">Ngày nhận phòng</label>
-                            <input id="registerCheckInDate" class="form-control" name="checkInDate" type="date"
-                                required>
-                            <div class="invalid-feedback">Vui lòng chọn ngày nhận phòng.</div>
+                            <div class="input-icon-group">
+                                <svg class="input-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <input id="registerCheckInDate" class="form-control icon-input" name="checkInDate" type="date" required>
+                                <div class="invalid-feedback">Vui lòng chọn ngày nhận phòng.</div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button id="submitRegisterBtn" type="submit" class="btn btn-success">Gửi đăng ký</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button id="submitRegisterBtn" type="submit" class="btn btn-primary btn-submit-icon">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+                        Gửi đăng ký
+                    </button>
                 </div>
             </form>
         </div>
@@ -261,16 +311,161 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 id="qrModalTitle" class="modal-title h5">Mã QR thanh toán</h2>
+                    <h2 class="modal-title h5">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+                        Thanh toán VietQR
+                    </h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
-                <div class="modal-body text-center">
-                    <img id="qrImage" src="img/payment.png" alt="Mã QR"
-                        style="max-width: 280px; width: 100%; height: auto;">
-                    <div id="qrNote" class="mt-3 text-start small"></div>
+                <div class="modal-body">
+                    <div class="qr-panel">
+                        <div class="qr-code-section">
+                            <div class="qr-frame">
+                                <div id="qrLoader" class="qr-loader"><span class="spinner-border spinner-border-sm text-dark"></span></div>
+                                <img id="qrImage" src="img/payment.png" alt="Mã QR thanh toán">
+                            </div>
+                            <div class="vietqr-badge">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                                Quét mã bằng <strong>VietQR</strong>
+                            </div>
+                            <div id="qrCountdown" class="qr-countdown">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                                <span>Hết hạn sau</span>
+                                <span class="countdown-digits" id="countdownDigits">30:00</span>
+                            </div>
+                            <button class="qr-refresh-btn" id="qrRefreshBtn" type="button">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                                Tạo lại mã QR
+                            </button>
+                        </div>
+                        <div class="qr-info-section">
+                            <!-- Amount Hero -->
+                            <div class="qr-amount-hero">
+                                <span class="qr-amount-label">Số tiền cần chuyển</span>
+                                <span class="qr-amount-value" id="qrAmount">—</span>
+                            </div>
+
+                            <!-- Bank Info Card -->
+                            <div class="qr-glass-card">
+                                <div class="qr-glass-card-title">Thông tin chuyển khoản</div>
+                                <div class="info-row">
+                                    <span class="info-label">Ngân hàng</span>
+                                    <span class="info-value" id="qrBankName">—</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Số tài khoản</span>
+                                    <span class="info-value mono" id="qrAccountNumber">—</span>
+                                    <button class="copy-btn" id="copyAccountBtn" type="button">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                        <span class="copy-tooltip">Sao chép</span>
+                                    </button>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Chủ tài khoản</span>
+                                    <span class="info-value" id="qrAccountHolder">—</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Nội dung CK</span>
+                                    <span class="info-value mono small" id="qrNote">—</span>
+                                    <button class="copy-btn" id="copyNoteBtn" type="button">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                        <span class="copy-tooltip">Sao chép</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Student Info -->
+                            <div class="qr-glass-card qr-glass-card-sm">
+                                <div class="info-row">
+                                    <span class="info-label">Sinh viên</span>
+                                    <span class="info-value" id="qrName">—</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Mã SV</span>
+                                    <span class="info-value" id="qrStudentCode">—</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Phòng</span>
+                                    <span class="info-value" id="qrRoomName">—</span>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="qr-actions">
+                                <button class="btn btn-primary btn-ripple" type="button" id="qrCopyAllBtn" style="flex:1">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                    Sao chép toàn bộ
+                                </button>
+                                <button class="btn btn-outline-secondary btn-ripple" type="button" id="qrPrintBtn">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                                    In
+                                </button>
+                            </div>
+
+                            <div class="qr-note">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                Sau khi chuyển khoản, vui lòng thông báo cho quản lý để xác nhận thanh toán.
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PAYMENT CHOICE MODAL ══ -->
+    <div class="modal fade" id="paymentChoiceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                        Chọn phương thức thanh toán
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="payment-choice-intro">Bạn vừa đăng ký phòng thành công! Vui lòng chọn hình thức thanh toán:</p>
+
+                    <div class="payment-options">
+                        <!-- Option 1: VietQR -->
+                        <div class="payment-option" id="payViaQR" role="button" tabindex="0">
+                            <div class="payment-option-icon">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                                </svg>
+                            </div>
+                            <div class="payment-option-body">
+                                <h3>Thanh toán qua VietQR</h3>
+                                <p>Quét mã QR qua ứng dụng ngân hàng bất kỳ để chuyển khoản ngay.</p>
+                            </div>
+                            <div class="payment-option-action">
+                                <span class="btn btn-gold btn-sm">Thanh toán ngay</span>
+                            </div>
+                        </div>
+
+                        <!-- Option 2: Pay at lobby -->
+                        <div class="payment-option" id="payAtLobby" role="button" tabindex="0">
+                            <div class="payment-option-icon">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M3 21h18M6 21V7l6-4 6 4v14M10 21v-6h4v6M8 10h.01M12 10h.01M16 10h.01"/>
+                                </svg>
+                            </div>
+                            <div class="payment-option-body">
+                                <h3>Thanh toán tại sảnh</h3>
+                                <p>Đến sảnh ký túc xá để thanh toán trực tiếp trong vòng 48 giờ.</p>
+                                <span class="badge badge-warning">Có thể chọn sau</span>
+                            </div>
+                            <div class="payment-option-action">
+                                <span class="btn btn-outline-secondary btn-sm">Chọn sau</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -278,12 +473,17 @@
 
     <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3"></div>
 
+    <button id="backToTop" class="back-to-top" type="button" aria-label="Lên đầu trang">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="18,15 12,9 6,15"/>
+      </svg>
+    </button>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/api.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/main.js"></script>
 
-    <!-- Navbar scroll effect -->
     <script>
         window.addEventListener('scroll', function () {
             const navbar = document.querySelector('.navbar');
@@ -295,5 +495,4 @@
         });
     </script>
 </body>
-
 </html>

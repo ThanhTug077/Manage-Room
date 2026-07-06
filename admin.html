@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="vi">
+<html lang="vi" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,24 +8,79 @@
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-    <div class="container">
-      <a class="navbar-brand" href="index.html">DormManager</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav" aria-controls="adminNav" aria-expanded="false" aria-label="Mở menu">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="adminNav">
-        <div class="navbar-nav ms-auto">
-          <a class="nav-link" href="index.html">Trang người dùng</a>
-          <a class="nav-link active" href="admin.html">Quản trị</a>
-          <button id="logoutBtn" class="btn btn-outline-light btn-sm ms-lg-3 d-none" type="button">Đăng xuất</button>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar d-none">
+    <div class="sidebar-brand">
+      <svg class="brand-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      <span class="brand-text">DormManager</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" href="#dashboard" data-sidebar-tab="dashboard">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/>
+          <rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>
+        </svg>
+        <span class="nav-text">Dashboard</span>
+      </a>
+      <a class="nav-item" href="#rooms" data-sidebar-tab="rooms">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 21V7l9-5 9 5v14"/><path d="M9 21V12h6v9"/>
+        </svg>
+        <span class="nav-text">Phòng</span>
+        <span class="nav-badge" id="roomCount">0</span>
+      </a>
+      <a class="nav-item" href="#students" data-sidebar-tab="students">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8"/>
+        </svg>
+        <span class="nav-text">Sinh viên</span>
+        <span class="nav-badge" id="studentCount">0</span>
+      </a>
+      <a class="nav-item" href="#payments" data-sidebar-tab="payments">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="1" y="7" width="22" height="13" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M5 7V5a2 2 0 012-2h10a2 2 0 012 2v2"/>
+        </svg>
+        <span class="nav-text">Thanh toán</span>
+        <span class="nav-badge" id="paymentCount">0</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="theme-toggle">
+        <label class="toggle-switch">
+          <input type="checkbox" id="themeToggle">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Giao diện sáng</span>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-info">
+          <span class="user-avatar">A</span>
+          <span class="user-name">Admin</span>
         </div>
+        <button id="logoutBtn" class="logout-btn d-none" type="button" title="Đăng xuất">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+            <polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
       </div>
     </div>
-  </nav>
+  </aside>
+  <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
+  <!-- Login -->
   <section id="loginSection" class="login-shell">
     <form id="loginForm" class="login-panel" novalidate>
+      <div class="login-brand">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      </div>
       <h1>Đăng nhập quản trị</h1>
       <p>Nhập tài khoản quản trị để sử dụng hệ thống DormManager.</p>
       <div class="mb-3">
@@ -38,137 +93,252 @@
         <input id="loginPassword" class="form-control" name="password" type="password" autocomplete="current-password" required>
         <div class="invalid-feedback">Mật khẩu không đúng.</div>
       </div>
-      <button class="btn btn-success w-100" type="submit">Đăng nhập</button>
+      <button class="btn btn-primary w-100" type="submit">Đăng nhập</button>
     </form>
   </section>
 
-  <main id="adminContent" class="container app-shell d-none">
-    <section class="page-heading">
-      <div>
-        <h1>Bảng quản trị ký túc xá</h1>
-        <p>Quản lý phòng, hồ sơ sinh viên và thanh toán.</p>
+  <!-- Main Content -->
+  <main id="adminContent" class="main-content d-none">
+    <!-- Top bar -->
+    <div class="main-topbar">
+      <button id="sidebarToggle" class="sidebar-toggle-btn" type="button" aria-label="Mở menu">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <div class="topbar-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="globalSearch" class="form-control" type="search" placeholder="Tìm kiếm nhanh...">
       </div>
-      <button id="addRecordBtn" class="btn btn-success" type="button">Thêm phòng</button>
-    </section>
+      <div class="topbar-right">
+        <span id="headerClock" class="header-clock"></span>
+      </div>
+    </div>
 
-    <section class="row g-3 mb-4">
-      <div class="col-6 col-xl-3">
-        <div class="stat-card"><span>Tổng phòng</span><strong id="totalRooms">0</strong></div>
+    <!-- ══════ DASHBOARD VIEW ══════ -->
+    <section id="viewDashboard" class="admin-view" data-view="dashboard">
+      <div class="view-header">
+        <div>
+          <h1 class="page-title" id="dashWelcome">Chào mừng trở lại</h1>
+          <p class="page-subtitle">Tổng quan hệ thống ký túc xá</p>
+        </div>
+        <button class="btn btn-primary" onclick="window.location.hash='#rooms'">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Quản lý phòng
+        </button>
       </div>
-      <div class="col-6 col-xl-3">
-        <div class="stat-card"><span>Phòng còn chỗ</span><strong id="availableRooms">0</strong></div>
+      <div class="stats-grid" id="dashStats">
+        <div class="stat-card"><div class="stat-icon" style="background:var(--accent-gold-dim);color:var(--accent-gold)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21V7l9-5 9 5v14"/><path d="M9 21V12h6v9"/></svg></div><div class="stat-body"><span class="stat-label">Tổng phòng</span><strong id="dashTotalRooms" class="stat-value">0</strong></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:var(--success-dim);color:var(--success)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg></div><div class="stat-body"><span class="stat-label">Còn chỗ</span><strong id="dashAvailable" class="stat-value">0</strong></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:var(--danger-dim);color:var(--danger)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="stat-body"><span class="stat-label">Đã đầy</span><strong id="dashFull" class="stat-value">0</strong></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:var(--accent-gold-dim);color:var(--accent-gold)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8"/></svg></div><div class="stat-body"><span class="stat-label">SV đang ở</span><strong id="dashActive" class="stat-value">0</strong></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:var(--warning-dim);color:var(--warning)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg></div><div class="stat-body"><span class="stat-label">Chưa thanh toán</span><strong id="dashUnpaid" class="stat-value">0</strong></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:var(--success-dim);color:var(--success)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="7" width="22" height="13" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M5 7V5a2 2 0 012-2h10a2 2 0 012 2v2"/></svg></div><div class="stat-body"><span class="stat-label">Đã thanh toán</span><strong id="dashPaid" class="stat-value">0</strong></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:var(--success-dim);color:var(--success)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div class="stat-body"><span class="stat-label">Doanh thu</span><strong id="dashRevenue" class="stat-value">0 ₫</strong></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:var(--accent-gold-dim);color:var(--accent-gold)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="stat-body"><span class="stat-label">Tỉ lệ lấp đầy</span><strong id="dashOccupancy" class="stat-value">0%</strong></div></div>
       </div>
-      <div class="col-6 col-xl-3">
-        <div class="stat-card"><span>Sinh viên đang ở</span><strong id="activeStudents">0</strong></div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-card-header"><h3>Doanh thu theo tháng</h3></div><div class="chart-body"><canvas id="revenueChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-header"><h3>Tình trạng thanh toán</h3></div><div class="chart-body"><canvas id="paymentChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-header"><h3>Phân bố phòng theo tòa</h3></div><div class="chart-body"><canvas id="roomChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-header"><h3>Sinh viên đăng ký</h3></div><div class="chart-body"><canvas id="studentChart"></canvas></div></div>
       </div>
-      <div class="col-6 col-xl-3">
-        <div class="stat-card"><span>Đã thanh toán</span><strong id="paidTotal">0 ₫</strong></div>
-      </div>
-    </section>
-
-    <section class="table-panel">
-      <div class="admin-toolbar">
-        <ul class="nav nav-pills" role="tablist">
-          <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-resource-tab="rooms" type="button">Phòng</button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" data-resource-tab="students" type="button">Sinh viên</button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" data-resource-tab="payments" type="button">Thanh toán</button>
-          </li>
-        </ul>
-        <div class="col-12 col-md-4">
-          <input id="adminSearch" class="form-control" type="search" placeholder="Tìm trong bảng">
+      <div class="dash-bottom">
+        <div class="dash-card activity-card">
+          <div class="dash-card-header"><h3>Hoạt động gần đây</h3></div>
+          <div id="activityFeed" class="activity-feed"><div class="empty-state">Chưa có hoạt động nào.</div></div>
+        </div>
+        <div class="dash-card quick-card">
+          <div class="dash-card-header"><h3>Thao tác nhanh</h3></div>
+          <div class="quick-actions">
+            <button class="quick-action-btn" onclick="window.location.hash='#rooms'" style="--q-color:var(--accent-gold)">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21V7l9-5 9 5v14"/><path d="M9 21V12h6v9"/></svg>
+              <span>Quản lý phòng</span>
+            </button>
+            <button class="quick-action-btn" onclick="window.location.hash='#students'" style="--q-color:var(--success)">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8"/></svg>
+              <span>Quản lý SV</span>
+            </button>
+            <button class="quick-action-btn" onclick="window.location.hash='#payments'" style="--q-color:var(--warning)">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="7" width="22" height="13" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M5 7V5a2 2 0 012-2h10a2 2 0 012 2v2"/></svg>
+              <span>Xem thanh toán</span>
+            </button>
+            <button class="quick-action-btn" id="quickAddRoom" style="--q-color:var(--accent-gold)">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Thêm phòng mới</span>
+            </button>
+          </div>
         </div>
       </div>
+    </section>
 
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 id="tableTitle" class="h5 mb-0">Quản lý phòng</h2>
-        <div class="btn-group" role="group" aria-label="Phân trang">
-          <button id="prevPageBtn" class="btn btn-outline-secondary btn-sm" type="button">Trước</button>
-          <span id="pageInfo" class="btn btn-outline-secondary btn-sm disabled">Trang 1/1</span>
-          <button id="nextPageBtn" class="btn btn-outline-secondary btn-sm" type="button">Sau</button>
+    <!-- ══════ ROOMS VIEW ══════ -->
+    <section id="viewRooms" class="admin-view d-none" data-view="rooms">
+      <div class="view-header">
+        <div>
+          <h1 class="page-title">Quản lý phòng</h1>
+          <p class="page-subtitle">Quản lý danh sách phòng ký túc xá</p>
+        </div>
+        <div class="header-actions">
+          <div class="view-mode-toggle" id="roomViewToggle">
+            <button class="active" data-mode="table" title="Bảng">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            </button>
+            <button data-mode="cards" title="Thẻ">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+            </button>
+            <button data-mode="map" title="Sơ đồ">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2"/></svg>
+            </button>
+          </div>
+          <button id="addRoomBtn" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Thêm phòng
+          </button>
         </div>
       </div>
-
-      <div class="table-responsive">
-        <table id="adminTable" class="table table-hover align-middle mb-0">
-          <tbody><tr><td class="loading-state">Đang tải dữ liệu...</td></tr></tbody>
-        </table>
+      <div class="filters-bar" id="roomFilters">
+        <div class="filter-group">
+          <input id="roomSearch" class="form-control" type="search" placeholder="Tìm phòng...">
+        </div>
+        <div class="filter-group"><select id="filterBuilding" class="form-select"><option value="">Tòa nhà</option></select></div>
+        <div class="filter-group"><select id="filterFloor" class="form-select"><option value="">Tầng</option></select></div>
+        <div class="filter-group"><select id="filterType" class="form-select"><option value="">Loại</option></select></div>
+        <div class="filter-group"><select id="filterStatus" class="form-select"><option value="">Trạng thái</option><option value="available">Còn chỗ</option><option value="full">Đã đầy</option><option value="maintenance">Bảo trì</option></select></div>
+        <div class="filter-group"><select id="filterCapacity" class="form-select"><option value="">Sức chứa</option><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div>
+        <button id="roomResetFilters" class="btn btn-outline-secondary">Xóa lọc</button>
       </div>
+      <div id="roomsTableView" class="table-view">
+        <div class="table-toolbar">
+          <span id="roomResultCount" class="result-count">0 phòng</span>
+          <div class="pagination-controls">
+            <button id="roomPrevPage" class="btn-page" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg></button>
+            <span id="roomPageInfo" class="page-info">Trang 1/1</span>
+            <button id="roomNextPage" class="btn-page" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></button>
+          </div>
+        </div>
+        <div class="table-responsive"><table id="roomsTable" class="table align-middle mb-0"><tbody><tr><td class="loading-state">Đang tải...</td></tr></tbody></table></div>
+      </div>
+      <div id="roomsCardsView" class="cards-view d-none">
+        <div id="roomCardGrid" class="room-card-grid"></div>
+      </div>
+      <div id="roomsMapView" class="map-view d-none">
+        <div id="roomMapGrid" class="room-map"></div>
+      </div>
+    </section>
+
+    <!-- ══════ STUDENTS VIEW ══════ -->
+    <section id="viewStudents" class="admin-view d-none" data-view="students">
+      <div class="view-header">
+        <div>
+          <h1 class="page-title">Quản lý sinh viên</h1>
+          <p class="page-subtitle">Quản lý hồ sơ sinh viên đang ở ký túc xá</p>
+        </div>
+        <div class="header-actions">
+          <button id="addStudentBtn" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Thêm sinh viên
+          </button>
+        </div>
+      </div>
+      <div class="filters-bar" id="studentFilters">
+        <div class="filter-group"><input id="studentSearch" class="form-control" type="search" placeholder="Tìm sinh viên..."></div>
+        <div class="filter-group"><select id="studentStatusFilter" class="form-select"><option value="">Trạng thái</option><option value="active">Đang ở</option><option value="inactive">Đã rời</option></select></div>
+        <button id="studentResetFilters" class="btn btn-outline-secondary">Xóa lọc</button>
+      </div>
+      <div class="table-toolbar">
+        <span id="studentResultCount" class="result-count">0 sinh viên</span>
+        <div class="pagination-controls">
+          <button id="studentPrevPage" class="btn-page" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg></button>
+          <span id="studentPageInfo" class="page-info">Trang 1/1</span>
+          <button id="studentNextPage" class="btn-page" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></button>
+        </div>
+      </div>
+      <div class="table-responsive"><table id="studentsTable" class="table align-middle mb-0"><tbody><tr><td class="loading-state">Đang tải...</td></tr></tbody></table></div>
+    </section>
+
+    <!-- ══════ PAYMENTS VIEW ══════ -->
+    <section id="viewPayments" class="admin-view d-none" data-view="payments">
+      <div class="view-header">
+        <div>
+          <h1 class="page-title">Quản lý thanh toán</h1>
+          <p class="page-subtitle">Theo dõi tình hình thanh toán của sinh viên</p>
+        </div>
+        <div class="header-actions">
+          <button id="addPaymentBtn" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Thêm thanh toán
+          </button>
+          <button id="exportPaymentsBtn" class="btn btn-outline-light">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </button>
+        </div>
+      </div>
+      <div class="payment-summary">
+        <div class="summary-card"><span class="summary-label">Đã thu</span><strong id="payCollected" class="summary-value" style="color:var(--success)">0 ₫</strong></div>
+        <div class="summary-card"><span class="summary-label">Chưa thu</span><strong id="payPending" class="summary-value" style="color:var(--warning)">0 ₫</strong></div>
+        <div class="summary-card"><span class="summary-label">Quá hạn</span><strong id="payOverdue" class="summary-value" style="color:var(--danger)">0 ₫</strong></div>
+        <div class="summary-card"><span class="summary-label">Tháng này</span><strong id="payThisMonth" class="summary-value" style="color:var(--accent-gold)">0 ₫</strong></div>
+      </div>
+      <div class="filters-bar" id="paymentFilters">
+        <div class="filter-group"><input id="paymentSearch" class="form-control" type="search" placeholder="Tìm thanh toán..."></div>
+        <div class="filter-group"><select id="paymentStatusFilter" class="form-select"><option value="">Trạng thái</option><option value="paid">Đã thanh toán</option><option value="unpaid">Chưa TT</option><option value="overdue">Quá hạn</option></select></div>
+        <div class="filter-group"><input id="paymentMonthFilter" class="form-control" type="month"></div>
+        <button id="paymentResetFilters" class="btn btn-outline-secondary">Xóa lọc</button>
+      </div>
+      <div class="table-toolbar">
+        <span id="paymentResultCount" class="result-count">0 thanh toán</span>
+        <div class="pagination-controls">
+          <button id="paymentPrevPage" class="btn-page" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg></button>
+          <span id="paymentPageInfo" class="page-info">Trang 1/1</span>
+          <button id="paymentNextPage" class="btn-page" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></button>
+        </div>
+      </div>
+      <div class="table-responsive"><table id="paymentsTable" class="table align-middle mb-0"><tbody><tr><td class="loading-state">Đang tải...</td></tr></tbody></table></div>
     </section>
   </main>
 
+  <!-- Modals -->
   <div class="modal fade" id="recordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <form id="recordForm" class="modal-content" novalidate>
-        <div class="modal-header">
-          <h2 id="recordModalTitle" class="modal-title h5">Thêm dữ liệu</h2>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-        </div>
-        <div class="modal-body">
-          <div id="formFields" class="row g-3"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-          <button id="saveRecordBtn" type="submit" class="btn btn-success">Lưu</button>
-        </div>
+        <div class="modal-header"><h2 id="recordModalTitle" class="modal-title h5">Thêm dữ liệu</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
+        <div class="modal-body"><div id="formFields" class="row g-3"></div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button id="saveRecordBtn" type="submit" class="btn btn-primary">Lưu</button></div>
       </form>
     </div>
   </div>
-
   <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="detailModalTitle" class="modal-title h5">Chi tiết</h2>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-        </div>
-        <div id="detailModalBody" class="modal-body"></div>
-      </div>
+      <div class="modal-content"><div class="modal-header"><h2 id="detailModalTitle" class="modal-title h5">Chi tiết</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div><div id="detailModalBody" class="modal-body"></div></div>
     </div>
   </div>
-
   <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 class="modal-title h5">Xác nhận xóa</h2>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-        </div>
-        <div class="modal-body">
-          <p id="deleteMessage" class="mb-0">Bạn chắc chắn muốn xóa bản ghi này?</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-          <button id="confirmDeleteBtn" type="button" class="btn btn-danger">Xóa</button>
-        </div>
-      </div>
+      <div class="modal-content"><div class="modal-header"><h2 class="modal-title h5">Xác nhận xóa</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div><div class="modal-body"><p id="deleteMessage" class="mb-0">Bạn chắc chắn muốn xóa bản ghi này?</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button id="confirmDeleteBtn" type="button" class="btn btn-danger">Xóa</button></div></div>
     </div>
   </div>
 
   <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3"></div>
 
-  <!-- Quick Help Button -->
-  <div id="quickHelpBtn" title="Trợ giúp nhanh">?</div>
-
-  <!-- Quick Help Panel -->
+  <!-- Quick Help -->
+  <div id="quickHelpBtn" title="Trợ giúp nhanh">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  </div>
   <div id="quickHelpPanel">
-    <div class="help-header">
-      Hướng dẫn nhanh
-      <div class="help-close" id="closeHelpBtn">&times;</div>
-    </div>
-    <div class="help-body" id="helpContent">
-      <!-- Nội dung sẽ được render bằng jQuery -->
-    </div>
+    <div class="help-header">Hướng dẫn nhanh<div class="help-close" id="closeHelpBtn">&times;</div></div>
+    <div class="help-body" id="helpContent"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/api.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/charts.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>

@@ -1,9 +1,5 @@
 // Cac hang so dung chung cho anh phong mac dinh va thong tin thanh toan.
 const PLACEHOLDER_ROOM_IMAGE = "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=900&q=80";
-const TRANSFER_QR_IMAGE = "img/payment.png";
-const BANK_NAME = "Ngân hàng VCB ";
-const ACCOUNT_NUMBER = "035821634";
-const ACCOUNT_HOLDER = "DOAN THANH TUNG";
 
 // Chuyen ky tu dac biet thanh HTML entity de tranh chen HTML/script vao giao dien.
 function escapeHtml(value) {
@@ -37,19 +33,56 @@ function buildPaymentNote(studentCode, roomNameOrId, paymentMonth) {
 function buildTransferInstruction(amount, note) {
   return `Số tiền chuyển khoản: <strong>${formatCurrency(amount)}</strong><br>` +
     `Nội dung chuyển khoản: <strong>${escapeHtml(note)}</strong><br>` +
-    `Ngân hàng nhận: <strong>${escapeHtml(BANK_NAME)}</strong><br>` +
-    `Số tài khoản: <strong>${escapeHtml(ACCOUNT_NUMBER)}</strong><br>` +
-    `Chủ tài khoản: <strong>${escapeHtml(ACCOUNT_HOLDER)}</strong>`;
+    `Ngân hàng nhận: <strong>${escapeHtml(CONFIG.BANK_NAME)}</strong><br>` +
+    `Số tài khoản: <strong>${escapeHtml(CONFIG.ACCOUNT_NUMBER)}</strong><br>` +
+    `Chủ tài khoản: <strong>${escapeHtml(CONFIG.ACCOUNT_HOLDER)}</strong>`;
 }
 
 // Tao ban text thuan cua thong tin chuyen khoan neu can copy/ghi log.
 function buildTransferText(amount, note) {
-  return `Ngân hàng: ${BANK_NAME}\nSố tài khoản: ${ACCOUNT_NUMBER}\nChủ tài khoản: ${ACCOUNT_HOLDER}\nSố tiền: ${formatCurrency(amount)}\nNội dung: ${note}`;
+  return `Ngân hàng: ${CONFIG.BANK_NAME}\nSố tài khoản: ${CONFIG.ACCOUNT_NUMBER}\nChủ tài khoản: ${CONFIG.ACCOUNT_HOLDER}\nSố tiền: ${formatCurrency(amount)}\nNội dung: ${note}`;
 }
 
-// Hien tai dung mot anh QR co dinh trong thu muc img.
-function getTransferQRCodeUrl(amount, note) {
-  return TRANSFER_QR_IMAGE;
+// Tao QR dong qua VietQR API, fallback ve QR server.
+async function getTransferQRCodeUrl(amount, note) {
+  const failoverUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
+    encodeURIComponent(buildTransferText(amount, note));
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(CONFIG.VIETQR_API_URL, {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        accountNo: CONFIG.ACCOUNT_NUMBER,
+        accountName: CONFIG.ACCOUNT_HOLDER,
+        acqId: CONFIG.BANK_BIN,
+        amount: Math.round(amount),
+        addInfo: note,
+        format: "text",
+        template: "compact2"
+      })
+    });
+    const data = await response.json();
+    if (data.code === "00" && data.data?.qrDataURL) {
+      return data.data.qrDataURL;
+    }
+  } catch (err) {
+  } finally {
+    clearTimeout(timeoutId);
+  }
+  return failoverUrl;
+}
+
+// Sao chep text vao clipboard va tra ve true neu thanh cong.
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    return false;
+  }
 }
 
 // Format so tien theo tien Viet Nam de hien thi thong nhat tren public va admin.
