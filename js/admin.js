@@ -8,10 +8,8 @@ const adminState = {
   eventsBound: false
 };
 
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "admin";
-const ADMIN_AUTH_KEY = "dormManagerAdminLoggedIn";
 const MAX_ROOM_IMAGE_SIZE = 3 * 1024 * 1024;
+const MAX_ROOM_IMAGES = 5;
 const ROOM_PAYLOAD_WARN_CHARS = 65000;
 const ROOM_PAYLOAD_MAX_CHARS = 95000;
 const ROOM_CAPACITY_OPTIONS = [1, 2, 4, 8];
@@ -79,24 +77,36 @@ function bindAuthEvents() {
   document.getElementById("loginForm").addEventListener("submit", handleLoginSubmit);
   document.getElementById("logoutBtn").addEventListener("click", handleLogout);
 }
-function isAdminLoggedIn() { return sessionStorage.getItem(ADMIN_AUTH_KEY) === "true"; }
-function handleLoginSubmit(e) {
+function isAdminLoggedIn() { return Auth.isAdmin(); }
+async function handleLoginSubmit(e) {
   e.preventDefault();
   const form = e.currentTarget;
   const u = document.getElementById("loginUsername");
   const p = document.getElementById("loginPassword");
-  const uValid = u.value.trim() === ADMIN_USERNAME;
-  const pValid = p.value === ADMIN_PASSWORD;
-  u.classList.toggle("is-valid", uValid); u.classList.toggle("is-invalid", !uValid);
-  p.classList.toggle("is-valid", pValid); p.classList.toggle("is-invalid", !pValid);
-  if (!uValid || !pValid) { form.classList.add("was-validated"); showToast("Sai tài khoản hoặc mật khẩu", "error"); return; }
-  sessionStorage.setItem(ADMIN_AUTH_KEY, "true");
-  form.classList.remove("was-validated");
-  u.classList.remove("is-valid", "is-invalid"); p.classList.remove("is-valid", "is-invalid");
-  showAdminContent();
+  const submitBtn = form.querySelector("button[type=submit]");
+
+  setButtonLoading(submitBtn, true, "Đang kiểm tra...");
+  try {
+    const result = await Auth.adminLogin(u.value.trim(), p.value);
+    if (!result.ok) {
+      u.classList.add("is-invalid");
+      p.classList.add("is-invalid");
+      form.classList.add("was-validated");
+      showToast("Sai tài khoản hoặc mật khẩu", "error");
+      return;
+    }
+    form.classList.remove("was-validated");
+    u.classList.remove("is-invalid"); p.classList.remove("is-invalid");
+    showAdminContent();
+    showToast(`Đăng nhập thành công (${result.role})`, "success");
+  } catch (err) {
+    showToast("Lỗi đăng nhập: " + err.message, "error");
+  } finally {
+    setButtonLoading(submitBtn, false);
+  }
 }
 function handleLogout() {
-  sessionStorage.removeItem(ADMIN_AUTH_KEY);
+  Auth.logout();
   adminState.rooms = []; adminState.students = []; adminState.payments = [];
   adminState.currentResource = "rooms"; adminState.roomsPage = 1; adminState.studentsPage = 1; adminState.paymentsPage = 1;
   destroyAllCharts();
@@ -232,20 +242,20 @@ function showView(view) {
 async function refreshViewData(view) {
   try {
     if (view === "rooms") {
-      adminState.rooms = await DormAPI.list("rooms");
+      adminState.rooms = await DormAPI.list("rooms", { force: true });
       populateRoomFilters();
       renderRoomsTable();
       updateSidebarCounts();
     } else if (view === "students") {
-      adminState.students = await DormAPI.list("students");
-      adminState.payments = adminState.students.map(studentToPayment);
+      adminState.students = await DormAPI.list("students", { force: true });
+      adminState.payments = await loadPayments();
       renderStudentsTable();
       renderPaymentsSummary();
       renderPaymentsTable();
       updateSidebarCounts();
     } else if (view === "payments") {
-      if (!adminState.students.length) adminState.students = await DormAPI.list("students");
-      adminState.payments = adminState.students.map(studentToPayment);
+      if (!adminState.students.length) adminState.students = await DormAPI.list("students", { force: true });
+      adminState.payments = await loadPayments();
       renderPaymentsSummary();
       renderPaymentsTable();
     }
@@ -282,11 +292,12 @@ function handleGlobalSearch(e) {
 /* ══ DATA LOADING ══ */
 async function loadAdminData() {
   try {
-    const [rooms, students] = await Promise.all([
-      DormAPI.list("rooms"), loadStudentsWithJquery()
+    const [rooms, students, payments] = await Promise.all([
+      DormAPI.list("rooms"),
+      DormAPI.list("students"),
+      loadPayments()
     ]);
-    adminState.rooms = rooms; adminState.students = students;
-    adminState.payments = students.map(studentToPayment);
+    adminState.rooms = rooms; adminState.students = students; adminState.payments = payments;
     updateSidebarCounts();
     populateRoomFilters();
     renderDashboard();
@@ -298,8 +309,8 @@ async function loadAdminData() {
     showToast("Không thể tải dữ liệu. Hãy kiểm tra API.", "error");
   }
 }
-function loadStudentsWithJquery() {
-  return $.ajax({ url: buildUrl("students"), method: "GET", dataType: "json" });
+async function loadPayments() {
+  return PaymentsHelper.list(adminState.students);
 }
 function updateSidebarCounts() {
   const rc = document.getElementById("roomCount"); if (rc) rc.textContent = adminState.rooms.length;
@@ -604,7 +615,7 @@ function renderStudentsTable() {
       <td>${escapeHtml(getRoomName(s.roomId))}</td>
       <td>${formatDate(s.checkInDate)}</td>
       <td><span class="badge ${getStatusBadgeClass(s.status)}">${getStatusLabel(s.status)}</span></td>
-      <td><span class="badge ${getStatusBadgeClass(s.paymentStatus)}">${getPaymentLabel(s.paymentStatus)}</span>${s.paymentStatus === "unpaid" ? `<button class="btn btn-sm btn-outline-success ms-1" data-action="confirm-payment" data-id="${escapeAttribute(s.id)}" type="button" title="Xác nhận đã thanh toán" style="padding:2px 8px;font-size:0.7rem">✓</button>` : ""}</td>
+      <td>${renderStudentPaymentCell(s)}</td>
       <td>${rowActionsHTML(s.id)}</td>
     </tr>`).join("")}</tbody>`;
   bindTableActions("studentsTable");
@@ -760,6 +771,18 @@ function studentToPayment(student) {
     paymentStatus: student.paymentStatus || "unpaid",
     paidAt: student.paidAt || "", paymentNote: student.paymentNote || student.note || "" };
 }
+function getStudentLatestPayment(studentId) {
+  const payments = adminState.payments.filter(p => String(p.studentId) === String(studentId));
+  if (!payments.length) return null;
+  return payments.sort((a, b) => String(b.paymentMonth || "").localeCompare(String(a.paymentMonth || "")))[0];
+}
+
+function renderStudentPaymentCell(student) {
+  const pay = getStudentLatestPayment(student.id);
+  const status = pay ? pay.paymentStatus : (student.paymentStatus || "unpaid");
+  const isUnpaid = status === "unpaid";
+  return `<span class="badge ${getStatusBadgeClass(status)}">${getPaymentLabel(status)}</span>${isUnpaid ? `<button class="btn btn-sm btn-outline-success ms-1" data-action="confirm-payment" data-id="${escapeAttribute(student.id)}" type="button" title="Xác nhận đã thanh toán" style="padding:2px 8px;font-size:0.7rem">✓</button>` : ""}`;
+}
 
 /* ══ CRUD: FORM ══ */
 function openFormModal(item) {
@@ -805,7 +828,7 @@ function renderImageField(item) {
     <button id="roomImagePicker" class="image-picker" type="button"><span>${images.length ? "Bấm để thêm ảnh từ máy" : "Bấm để chọn ảnh từ máy"}</span></button>
     <div class="room-image-url-row mt-3"><input id="roomImageUrlInput" class="form-control" type="url" placeholder="https://... (ảnh từ liên kết)"><button id="roomImageUrlAddBtn" class="btn btn-outline-secondary flex-shrink-0" type="button">Thêm URL</button></div>
     <div id="roomImagePreviewList" class="image-preview-list"></div>
-    <div id="roomImageFeedback" class="form-text">File tối đa ${maxMb}MB/ảnh. Ảnh từ máy được nén nhiều lần; ưu tiên URL ảnh.</div>
+    <div id="roomImageFeedback" class="form-text">Tối đa ${MAX_ROOM_IMAGES} ảnh, ${maxMb}MB/ảnh. Dùng URL ảnh để tránh lỗi 413.</div>
   </div>`;
 }
 
@@ -855,8 +878,19 @@ async function normalizeRoomImagesForSave(data) {
     if (getRoomPayloadJsonSize(data) <= ROOM_PAYLOAD_MAX_CHARS) return;
   }
   applyRoomPayloadDedupe(data);
-  if (getRoomPayloadJsonSize(data) > ROOM_PAYLOAD_MAX_CHARS)
-    throw new Error("Dữ liệu phòng vẫn quá lớn. Hãy dùng ảnh URL, bớt ảnh, rút mô tả.");
+  const size = getRoomPayloadJsonSize(data);
+  if (size > ROOM_PAYLOAD_MAX_CHARS) {
+    autoStripBase64Images(data);
+    showToast("Ảnh base64 đã được xóa do quá kích thước. Dùng URL ảnh thay thế.", "warning");
+  }
+}
+function autoStripBase64Images(data) {
+  if (Array.isArray(data.images)) {
+    data.images = data.images.filter(i => !String(i).startsWith("data:image/"));
+    data.image = data.images[0] || "";
+  } else if (data.image && String(data.image).startsWith("data:image/")) {
+    data.image = "";
+  }
 }
 
 function bindImagePicker() {
@@ -873,7 +907,7 @@ function bindImagePicker() {
   const maxMb = MAX_ROOM_IMAGE_SIZE / (1024*1024);
   function syncImages() {
     hiddenInput.value = images[0]||""; imagesInput.value = JSON.stringify(images);
-    picker.querySelector("span").textContent = images.length ? "Bấm để thêm ảnh từ máy" : "Bấm để chọn ảnh từ máy";
+    picker.querySelector("span").textContent = images.length ? `Ảnh (${images.length}/${MAX_ROOM_IMAGES})` : "Bấm để chọn ảnh từ máy";
     picker.classList.toggle("is-valid", images.length > 0);
     renderRoomImagePreviews(previewList, images);
   }
@@ -882,8 +916,9 @@ function bindImagePicker() {
     const href = tryParseHttpRoomImageUrl(urlInput.value);
     if (!href || !isValidImageUrl(href)) { urlInput.classList.add("is-invalid"); feedback.textContent = "URL không hợp lệ."; feedback.classList.add("text-danger"); showToast("URL ảnh không hợp lệ", "error"); return; }
     if (images.includes(href)) { showToast("URL đã có trong danh sách.", "warning"); return; }
+    if (images.length >= MAX_ROOM_IMAGES) { showToast(`Tối đa ${MAX_ROOM_IMAGES} ảnh/phòng.`, "warning"); return; }
     urlInput.classList.remove("is-invalid"); images = [...images, href]; syncImages(); urlInput.value = "";
-    feedback.textContent = "Đã thêm ảnh từ URL."; feedback.classList.remove("text-danger"); feedback.classList.add("text-success");
+    feedback.textContent = `Đã thêm ảnh từ URL. (${images.length}/${MAX_ROOM_IMAGES})`; feedback.classList.remove("text-danger"); feedback.classList.add("text-success");
     picker.classList.remove("is-invalid"); picker.classList.add("is-valid");
     updateRealtimeValidation(document.getElementById("recordForm"));
   });
@@ -896,9 +931,13 @@ function bindImagePicker() {
     if (invalidFile) { showImagePickerError(fileInput, picker, feedback, "File không phải ảnh.", "Chọn đúng file ảnh"); return; }
     const oversizedFile = files.find(f => f.size > MAX_ROOM_IMAGE_SIZE);
     if (oversizedFile) { showImagePickerError(fileInput, picker, feedback, `Ảnh vượt quá ${maxMb}MB.`, `Ảnh vượt quá ${maxMb}MB`); return; }
-    Promise.all(files.map(f => readImageFileAsDataUrl(f).then(d => compressRoomImageDataUrl(d, ROOM_IMAGE_COMPRESSION_TIERS[0])))).then(newImages => {
+    const remaining = MAX_ROOM_IMAGES - images.length;
+    if (remaining <= 0) { showToast(`Tối đa ${MAX_ROOM_IMAGES} ảnh/phòng. Xóa bớt để thêm.`, "warning"); fileInput.value = ""; return; }
+    const selectedFiles = files.slice(0, remaining);
+    if (selectedFiles.length < files.length) showToast(`Chỉ lấy ${remaining} ảnh (tối đa ${MAX_ROOM_IMAGES}).`, "warning");
+    Promise.all(selectedFiles.map(f => readImageFileAsDataUrl(f).then(d => compressRoomImageDataUrl(d, ROOM_IMAGE_COMPRESSION_TIERS[0])))).then(newImages => {
       images = [...images, ...newImages.filter(isValidImageUrl)]; syncImages();
-      feedback.textContent = `${newImages.length} ảnh đã thêm.`; feedback.classList.remove("text-danger"); feedback.classList.add("text-success");
+      feedback.textContent = `${newImages.length} ảnh đã thêm. (${images.length}/${MAX_ROOM_IMAGES})`; feedback.classList.remove("text-danger"); feedback.classList.add("text-success");
       picker.classList.remove("is-invalid"); picker.classList.add("is-valid"); fileInput.value = "";
       updateRealtimeValidation(document.getElementById("recordForm"));
     }).catch(() => showImagePickerError(fileInput, picker, feedback, "Không thể đọc file.", "Không thể đọc ảnh"));
@@ -928,11 +967,32 @@ function bindRoomTypeSuggestion(form) {
 }
 
 /* ══ CONFIRM PAYMENT ══ */
-async function confirmPayment(id) {
+async function confirmPayment(studentId) {
   if (!confirm("Xác nhận sinh viên này đã thanh toán?")) return;
   try {
-    const student = await DormAPI.get("students", id);
-    await DormAPI.update("students", id, { ...student, paymentStatus: "paid", paidAt: new Date().toISOString() });
+    const student = adminState.students.find(s => String(s.id) === String(studentId));
+    if (!student) { showToast("Không tìm thấy sinh viên", "error"); return; }
+
+    const existingPay = adminState.payments.find(p =>
+      String(p.studentId) === String(studentId) &&
+      p.paymentMonth === getCurrentPaymentMonth()
+    );
+
+    const room = adminState.rooms.find(r => String(r.id) === String(student.roomId));
+    const payData = {
+      studentId: student.id,
+      roomId: student.roomId || "",
+      paymentAmount: student.paymentAmount || room?.price || 0,
+      paymentMonth: getCurrentPaymentMonth(),
+      paymentStatus: "paid",
+      paidAt: new Date().toISOString(),
+      paymentNote: buildPaymentNote(student.studentCode || "", room?.name || student.roomId || "", getCurrentPaymentMonth())
+    };
+    if (existingPay) {
+      await PaymentsHelper.update(existingPay.id, { ...existingPay, ...payData }, adminState.students);
+    } else {
+      await PaymentsHelper.create(payData, adminState.students);
+    }
     showToast("Đã xác nhận thanh toán");
     await loadAdminData();
   } catch (e) {
@@ -954,7 +1014,14 @@ async function handleFormSubmit(e) {
   setButtonLoading(submitButton, true, "Đang lưu...");
   try {
     const resource = adminState.currentResource;
-    if (resource === "payments") { await savePaymentOnStudent(data); showToast("Cập nhật thanh toán thành công"); bootstrap.Modal.getInstance(document.getElementById("recordModal")).hide(); await loadAdminData(); return; }
+    if (resource === "payments") {
+      if (adminState.editingId) { await PaymentsHelper.update(adminState.editingId, data, adminState.students); }
+      else { await PaymentsHelper.create(data, adminState.students); }
+      showToast("Cập nhật thanh toán thành công");
+      bootstrap.Modal.getInstance(document.getElementById("recordModal")).hide();
+      await loadAdminData();
+      return;
+    }
     if (resource === "rooms") { await normalizeRoomImagesForSave(data); if (getRoomPayloadJsonSize(data) > ROOM_PAYLOAD_WARN_CHARS) showToast("Gói dữ liệu phòng lớn. Dùng URL ảnh nếu lỗi.", "warning"); }
     if (adminState.editingId) { await DormAPI.update(resource, adminState.editingId, data); showToast("Cập nhật thành công"); }
     else { await DormAPI.create(resource, data); showToast("Thêm thành công"); }
@@ -962,8 +1029,20 @@ async function handleFormSubmit(e) {
     await loadAdminData();
     if (resource === "rooms" && !adminState.editingId) { toggleRoomView("table"); renderRoomsTable(); }
   } catch (error) {
-    if (String(error.message||"").includes("413")) showToast("Lỗi 413: Dữ liệu quá lớn. Dùng URL ảnh, bớt ảnh.", "error");
-    else showToast(`Lưu thất bại: ${error.message}`, "error");
+    if (String(error.message||"").includes("413")) {
+      showToast("Lỗi 413: Dữ liệu quá lớn. Đang thử xóa ảnh base64...", "warning");
+      if (adminState.currentResource === "rooms") {
+        autoStripBase64Images(data);
+        try {
+          if (adminState.editingId) { await DormAPI.update("rooms", adminState.editingId, data); }
+          else { await DormAPI.create("rooms", data); }
+          showToast("Lưu thành công sau khi xóa ảnh base64.", "success");
+          bootstrap.Modal.getInstance(document.getElementById("recordModal")).hide();
+          await loadAdminData();
+          return;
+        } catch (e2) { showToast("Vẫn lỗi sau khi xóa ảnh. Hãy dùng URL ảnh.", "error"); }
+      }
+    } else showToast(`Lưu thất bại: ${error.message}`, "error");
   } finally { setButtonLoading(submitButton, false); }
 }
 
@@ -1034,7 +1113,7 @@ async function confirmDelete() {
   const button = document.getElementById("confirmDeleteBtn");
   setButtonLoading(button, true, "Đang xóa...");
   try {
-    if (adminState.currentResource === "payments") { await clearPaymentOnStudent(adminState.deleteTarget.id); showToast("Đã xóa thông tin thanh toán"); }
+    if (adminState.currentResource === "payments") { await PaymentsHelper.remove(adminState.deleteTarget.id); showToast("Đã xóa thanh toán"); }
     else { await DormAPI.remove(adminState.currentResource, adminState.deleteTarget.id); showToast("Xóa thành công"); }
     bootstrap.Modal.getInstance(document.getElementById("deleteModal")).hide();
     adminState.deleteTarget = null;
@@ -1043,15 +1122,13 @@ async function confirmDelete() {
   finally { setButtonLoading(button, false); }
 }
 async function savePaymentOnStudent(data) {
-  const studentId = adminState.editingId || data.studentId;
-  const student = adminState.students.find(s => String(s.id) === String(studentId));
-  if (!student) throw new Error("Không tìm thấy sinh viên");
-  await DormAPI.update("students", studentId, { ...student, roomId: data.roomId, paymentAmount: data.paymentAmount, paymentMonth: data.paymentMonth, paymentStatus: data.paymentStatus, paidAt: data.paymentStatus==="paid" ? (data.paidAt||new Date().toISOString().split("T")[0]) : "", paymentNote: data.paymentNote });
+  await PaymentsHelper.create(data, adminState.students);
 }
 async function clearPaymentOnStudent(studentId) {
-  const student = adminState.students.find(s => String(s.id) === String(studentId));
-  if (!student) throw new Error("Không tìm thấy sinh viên");
-  await DormAPI.update("students", studentId, { ...student, paymentAmount: 0, paymentMonth: "", paymentStatus: "unpaid", paidAt: "", paymentNote: "" });
+  const pays = adminState.payments.filter(p => String(p.studentId) === String(studentId));
+  for (const pay of pays) {
+    await PaymentsHelper.remove(pay.id);
+  }
 }
 
 /* ══ JQUERY HELP ══ */

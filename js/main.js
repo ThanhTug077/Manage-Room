@@ -437,7 +437,7 @@ async function handleRegisterSubmit(event) {
 
   setButtonLoading(submitButton, true, "Đang gửi...");
   try {
-    const latestRoom = await DormAPI.get("rooms", data.roomId);
+    const latestRoom = await DormAPI.get("rooms", data.roomId, { force: true });
     const latestStatus = getRoomStatus(latestRoom);
     if (latestStatus !== "available" || getAvailableBeds(latestRoom) <= 0) {
       showToast("Phòng này hiện không còn chỗ trống", "warning");
@@ -461,7 +461,14 @@ async function handleRegisterSubmit(event) {
       paymentNote
     };
 
-    await DormAPI.create("students", payload);
+    const newStudent = await DormAPI.create("students", payload);
+    await PaymentsHelper.create({
+      studentId: newStudent.id,
+      roomId: latestRoom.id,
+      paymentAmount,
+      paymentMonth,
+      paymentStatus: "unpaid", paidAt: "", paymentNote
+    }, [newStudent]);
     const nextOccupied = Number(latestRoom.occupied || 0) + 1;
     const nextStatus = nextOccupied >= Number(latestRoom.capacity || 0) ? "full" : "available";
     const { id: _rid, ...roomUpdate } = latestRoom;

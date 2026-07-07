@@ -76,7 +76,7 @@ function setupPaymentConfirmBtn(studentCode, note, amount) {
     if (!confirm("Bạn đã chuyển khoản đúng số tiền và nội dung?")) return;
     setButtonLoading(newBtn, true, "Đang xác nhận...");
     try {
-      const students = await DormAPI.list("students");
+      const students = await DormAPI.list("students", { force: true });
       const match = students.find(s =>
         s.studentCode === studentCode &&
         s.paymentStatus === "unpaid"
@@ -91,6 +91,15 @@ function setupPaymentConfirmBtn(studentCode, note, amount) {
         paymentStatus: "paid",
         paidAt: new Date().toISOString()
       });
+      await PaymentsHelper.create({
+        studentId: match.id,
+        roomId: match.roomId || "",
+        paymentAmount: match.paymentAmount || amount || 0,
+        paymentMonth: match.paymentMonth || getCurrentPaymentMonth(),
+        paymentStatus: "paid",
+        paidAt: new Date().toISOString(),
+        paymentNote: match.paymentNote || note || ""
+      }, students);
       showToast("Xác nhận thanh toán thành công!", "success");
       setTimeout(() => { window.location.href = "index.html"; }, 2000);
     } catch (e) {

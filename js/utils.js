@@ -209,6 +209,43 @@ function showToast(message, type = "success") {
   toastElement.addEventListener("hidden.bs.toast", () => toastElement.remove());
 }
 
+// ── PaymentHelper: abstraction cho payments resource (fallback ve student record neu API khong co) ──
+const PaymentsHelper = {
+  async list(students) {
+    try { return await DormAPI.list("payments", { force: true }); }
+    catch (e) { return (students || []).map(studentToPayment); }
+  },
+
+  async create(data, students) {
+    try { return await DormAPI.create("payments", data); }
+    catch (e) { await this._saveToStudent(data, students); return data; }
+  },
+
+  async update(id, data, students) {
+    try { return await DormAPI.update("payments", id, data); }
+    catch (e) { await this._saveToStudent(data, students); return data; }
+  },
+
+  async remove(id) {
+    try { return await DormAPI.remove("payments", id); }
+    catch (e) { return null; }
+  },
+
+  async _saveToStudent(data, students) {
+    const list = students || [];
+    const student = list.find(s => String(s.id) === String(data.studentId));
+    if (!student) return;
+    await DormAPI.update("students", student.id, {
+      ...student,
+      paymentAmount: data.paymentAmount || student.paymentAmount || 0,
+      paymentMonth: data.paymentMonth || student.paymentMonth || getCurrentPaymentMonth(),
+      paymentStatus: data.paymentStatus || student.paymentStatus || "unpaid",
+      paidAt: data.paymentStatus === "paid" ? (data.paidAt || new Date().toISOString().split("T")[0]) : "",
+      paymentNote: data.paymentNote || student.paymentNote || ""
+    });
+  }
+};
+
 // Doi nut sang trang thai loading de tranh bam lap trong luc dang gui request.
 function setButtonLoading(button, isLoading, loadingText = "Đang xử lý...") {
   if (!button) return;
