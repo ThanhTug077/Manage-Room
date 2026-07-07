@@ -248,14 +248,14 @@ async function refreshViewData(view) {
       updateSidebarCounts();
     } else if (view === "students") {
       adminState.students = await DormAPI.list("students", { force: true });
-      adminState.payments = await loadPayments();
+      adminState.payments = await PaymentsHelper.list(adminState.students);
       renderStudentsTable();
       renderPaymentsSummary();
       renderPaymentsTable();
       updateSidebarCounts();
     } else if (view === "payments") {
       if (!adminState.students.length) adminState.students = await DormAPI.list("students", { force: true });
-      adminState.payments = await loadPayments();
+      adminState.payments = await PaymentsHelper.list(adminState.students);
       renderPaymentsSummary();
       renderPaymentsTable();
     }
