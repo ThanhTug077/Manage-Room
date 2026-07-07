@@ -76,10 +76,10 @@ async function showStudentDashboard() {
 
     document.getElementById("studentPaymentInfo").innerHTML = `
       <div class="row g-3 mt-2">
-        <div class="col-6 col-md-3"><small style="color:#fff;display:block;font-size:.75rem">Kỳ thanh toán</small><strong style="color:#fff">${escapeHtml(payMonth)}</strong></div>
-        <div class="col-6 col-md-3"><small style="color:#fff;display:block;font-size:.75rem">Số tiền</small><strong style="color:#fff">${payAmount}</strong></div>
-        <div class="col-6 col-md-3"><small style="color:#fff;display:block;font-size:.75rem">Trạng thái</small><span class="badge ${payBadge}" style="color:#fff">${payLabel}</span></div>
-        <div class="col-6 col-md-3"><small style="color:#fff;display:block;font-size:.75rem">Ngày thanh toán</small><strong style="color:#fff">${escapeHtml(payDate)}</strong></div>
+        <div class="col-6 col-md-3"><small style="color:#fff;display:block;font-size:.75rem;font-weight:600">Kỳ thanh toán</small><strong style="color:#fff">${escapeHtml(payMonth)}</strong></div>
+        <div class="col-6 col-md-3"><small style="color:#fff;display:block;font-size:.75rem;font-weight:600">Số tiền</small><strong style="color:#fff">${payAmount}</strong></div>
+        <div class="col-6 col-md-3"><small style="color:#fff;display:block;font-size:.75rem;font-weight:600">Trạng thái</small><span class="badge ${payBadge}" style="color:#fff!important;font-weight:600">${payLabel}</span></div>
+        <div class="col-6 col-md-3"><small style="color:#fff;display:block;font-size:.75rem;font-weight:600">Ngày thanh toán</small><strong style="color:#fff">${escapeHtml(payDate)}</strong></div>
       </div>
       ${payStatus === "unpaid" ? `<div class="mt-3"><a href="payment.html?amount=${student.paymentAmount || 0}&note=${encodeURIComponent(student.paymentNote || "")}&fullName=${encodeURIComponent(student.fullName || "")}&studentCode=${encodeURIComponent(student.studentCode || "")}&roomName=${encodeURIComponent(room ? room.name : "")}" class="btn btn-primary btn-sm">Thanh toán ngay</a></div>` : ""}
     `;
