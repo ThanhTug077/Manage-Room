@@ -140,6 +140,12 @@
         </section>
 
         <section id="roomList" class="row g-4" aria-live="polite"></section>
+
+        <nav id="roomPagination" class="d-flex justify-content-center align-items-center gap-3 mt-4 d-none" aria-label="Phân trang danh sách phòng">
+            <button id="listPrevBtn" class="btn btn-outline-secondary" type="button">← Trang trước</button>
+            <span id="listPageInfo" class="fw-medium"></span>
+            <button id="listNextBtn" class="btn btn-outline-secondary" type="button">Trang sau →</button>
+        </nav>
     </main>
 
     <!-- ═══ PRICE SHOWCASE ═══ -->
@@ -243,6 +249,15 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
                 <div id="roomModalBody" class="modal-body"></div>
+                <div id="roomModalFooter" class="modal-footer justify-content-between d-none">
+                    <button id="prevRoomBtn" class="btn btn-outline-secondary" type="button">
+                        ← Phòng trước
+                    </button>
+                    <span id="roomPosition" class="fw-medium"></span>
+                    <button id="nextRoomBtn" class="btn btn-outline-secondary" type="button">
+                        Phòng sau →
+                    </button>
+                </div>
             </div>
         </div>
     </div>

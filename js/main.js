@@ -2,6 +2,9 @@
 const publicState = {
   rooms: [],
   selectedRoomId: null,
+  currentRoomIndex: 0,
+  pageSize: 9,
+  currentPage: 1,
   filters: {
     keyword: "",
     building: "",
@@ -31,6 +34,7 @@ function bindPublicEvents() {
   const searchInput = document.getElementById("searchInput");
   if (searchInput) searchInput.addEventListener("input", (event) => {
     publicState.filters.keyword = event.target.value;
+    publicState.currentPage = 1;
     renderPublicRooms();
   });
 
@@ -39,6 +43,7 @@ function bindPublicEvents() {
     if (el) el.addEventListener("change", (event) => {
       const key = id.replace("Filter", "");
       publicState.filters[key] = event.target.value;
+      publicState.currentPage = 1;
     renderPublicRooms();
     renderPriceGrid();
     });
@@ -47,6 +52,7 @@ function bindPublicEvents() {
   const resetBtn = document.getElementById("resetFiltersBtn");
   if (resetBtn) resetBtn.addEventListener("click", () => {
     publicState.filters = { keyword: "", building: "", floor: "", type: "", status: "", amenity: "" };
+    publicState.currentPage = 1;
     const pf = document.getElementById("publicFilters");
     if (pf) pf.reset();
     renderPublicRooms();
@@ -55,6 +61,18 @@ function bindPublicEvents() {
 
   const regForm = document.getElementById("registerForm");
   if (regForm) regForm.addEventListener("submit", handleRegisterSubmit);
+
+  // Navigation in room detail modal
+  const prevBtn = document.getElementById("prevRoomBtn");
+  const nextBtn = document.getElementById("nextRoomBtn");
+  if (prevBtn) prevBtn.addEventListener("click", () => navigateRoom(-1));
+  if (nextBtn) nextBtn.addEventListener("click", () => navigateRoom(1));
+
+  // Pagination for room list
+  const listPrevBtn = document.getElementById("listPrevBtn");
+  const listNextBtn = document.getElementById("listNextBtn");
+  if (listPrevBtn) listPrevBtn.addEventListener("click", () => goToPage(publicState.currentPage - 1));
+  if (listNextBtn) listNextBtn.addEventListener("click", () => goToPage(publicState.currentPage + 1));
 
   // Theme toggle
   const themeBtn = document.getElementById("publicThemeToggle");
@@ -147,15 +165,50 @@ function renderPublicRooms() {
 
   if (!rooms.length) {
     list.innerHTML = `<div class="col-12 empty-state">Không có phòng phù hợp với bộ lọc hiện tại.</div>`;
+    updateRoomPagination(0);
     return;
   }
 
-  list.innerHTML = rooms.map(renderRoomCard).join("");
+  const totalPages = Math.max(Math.ceil(rooms.length / publicState.pageSize), 1);
+  if (publicState.currentPage > totalPages) publicState.currentPage = totalPages;
+
+  const start = (publicState.currentPage - 1) * publicState.pageSize;
+  const pageRooms = rooms.slice(start, start + publicState.pageSize);
+
+  list.innerHTML = pageRooms.map(renderRoomCard).join("");
   list.querySelectorAll("[data-room-id]").forEach((button) => {
     button.addEventListener("click", () => openRoomModal(button.dataset.roomId));
   });
 
+  updateRoomPagination(totalPages);
   initScrollAnimations();
+}
+
+function updateRoomPagination(totalPages) {
+  const pagination = document.getElementById("roomPagination");
+  const pageInfo = document.getElementById("listPageInfo");
+  const prevBtn = document.getElementById("listPrevBtn");
+  const nextBtn = document.getElementById("listNextBtn");
+  if (!pagination || !pageInfo) return;
+
+  if (totalPages <= 1) {
+    pagination.classList.add("d-none");
+    return;
+  }
+
+  pagination.classList.remove("d-none");
+  pageInfo.textContent = `${publicState.currentPage}/${totalPages}`;
+  if (prevBtn) prevBtn.disabled = publicState.currentPage <= 1;
+  if (nextBtn) nextBtn.disabled = publicState.currentPage >= totalPages;
+}
+
+function goToPage(page) {
+  const totalRooms = getFilteredRooms().length;
+  const totalPages = Math.max(Math.ceil(totalRooms / publicState.pageSize), 1);
+  if (page < 1 || page > totalPages) return;
+  publicState.currentPage = page;
+  renderPublicRooms();
+  document.getElementById("roomSection").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 // Render so do phong theo tang, moi tang la mot section rieng biet.
@@ -312,6 +365,9 @@ function openRoomModal(roomId) {
   if (!room) return;
 
   publicState.selectedRoomId = room.id;
+  publicState.currentRoomIndex = publicState.rooms.findIndex((item) => String(item.id) === String(roomId));
+  if (publicState.currentRoomIndex < 0) publicState.currentRoomIndex = 0;
+
   const status = getRoomStatus(room);
   const canRegister = status === "available" && getAvailableBeds(room) > 0;
   document.getElementById("roomModalTitle").textContent = room.name || "Chi tiết phòng";
@@ -343,8 +399,35 @@ function openRoomModal(roomId) {
     </div>
   </div>`;
 
+  updateRoomNavigation();
+
   const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("roomModal"));
   modal.show();
+}
+
+function updateRoomNavigation() {
+  const total = publicState.rooms.length;
+  const current = publicState.currentRoomIndex;
+  const footer = document.getElementById("roomModalFooter");
+  const position = document.getElementById("roomPosition");
+  const prevBtn = document.getElementById("prevRoomBtn");
+  const nextBtn = document.getElementById("nextRoomBtn");
+  if (!footer || !position) return;
+
+  footer.classList.remove("d-none");
+  position.textContent = `${current + 1}/${total}`;
+  if (prevBtn) prevBtn.disabled = current <= 0;
+  if (nextBtn) nextBtn.disabled = current >= total - 1;
+}
+
+function navigateRoom(delta) {
+  const total = publicState.rooms.length;
+  if (total === 0) return;
+  const newIndex = publicState.currentRoomIndex + delta;
+  if (newIndex < 0 || newIndex >= total) return;
+  const room = publicState.rooms[newIndex];
+  if (!room) return;
+  openRoomModal(room.id);
 }
 
 function renderRoomCarousel(room, carouselId, className = "") {
