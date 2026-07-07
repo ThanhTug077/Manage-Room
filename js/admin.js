@@ -292,12 +292,14 @@ function handleGlobalSearch(e) {
 /* ══ DATA LOADING ══ */
 async function loadAdminData() {
   try {
-    const [rooms, students, payments] = await Promise.all([
+    const [rooms, students] = await Promise.all([
       DormAPI.list("rooms"),
-      DormAPI.list("students"),
-      loadPayments()
+      DormAPI.list("students")
     ]);
-    adminState.rooms = rooms; adminState.students = students; adminState.payments = payments;
+    adminState.rooms = rooms;
+    adminState.students = students;
+    const payments = await PaymentsHelper.list(adminState.students);
+    adminState.payments = payments;
     updateSidebarCounts();
     populateRoomFilters();
     renderDashboard();
@@ -308,9 +310,6 @@ async function loadAdminData() {
   } catch (error) {
     showToast("Không thể tải dữ liệu. Hãy kiểm tra API.", "error");
   }
-}
-async function loadPayments() {
-  return PaymentsHelper.list(adminState.students);
 }
 function updateSidebarCounts() {
   const rc = document.getElementById("roomCount"); if (rc) rc.textContent = adminState.rooms.length;
